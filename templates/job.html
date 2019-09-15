@@ -1,0 +1,22 @@
+<html lang="en">
+<title>Scanner Service</title>
+<body>
+<section>
+    <h2>Job: {{.JobName}}</h2>
+    <form id="print" action="/scan" method="post">
+        <input type="hidden" name="jobName" value="{{.JobName}}"/>
+        <input type="submit" value="Scan">
+    </form>
+</section>
+{{if .Scans -}}
+    <section>
+        <h2>Previous scans</h2>
+        <ul>
+            {{range $scan := .Scans }}
+                <li>{{$scan}}</li>
+            {{- end}}
+        </ul>
+    </section>
+{{- end}}
+</body>
+</html>

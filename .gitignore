@@ -1,0 +1,11 @@
+.idea
+*.iml
+build
+obj*
+debian/hd-idle
+debian/debhelper-build-stamp
+debian/.debhelper
+debian/files
+debian/hd-idle.debhelper.log
+debian/hd-idle.substvars
+release
