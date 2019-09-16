@@ -37,7 +37,11 @@ func init() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	indexTemplate = template.Must(template.New("index.html").Parse(indexFile))
+	headerFile, err := box.FindString("header.html")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	indexTemplate = template.Must(template.New("index.html").ParseFiles(headerFile, indexFile))
 
 	jobFile, err := box.FindString("job.html")
 	if err != nil {
@@ -58,9 +62,6 @@ func main() {
 
 	router := mux.NewRouter()
 	router.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", http.FileServer(box)))
-	//router.PathPrefix("/static/").HandlerFunc(staticHandler)
-	//router.Handle("/static/", http.StripPrefix("/static/", fs))
-	//router.Handle("/assets", http.FileServer(box))
 	router.HandleFunc("/", homePage).Methods("GET")
 	router.HandleFunc("/job", resumeJobPage).Methods("GET")
 	router.HandleFunc("/job", createJobHandler).Methods("POST")

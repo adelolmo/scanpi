@@ -1,19 +1,4 @@
-<!doctype html>
-<html lang="en">
-<title>{{.Title}}</title>
-<!-- Required meta tags -->
-<meta charset="utf-8">
-<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0'/>
-<meta name="mobile-web-app-capable" content="yes">
-
-<link rel="shortcut icon" sizes="196x196" href="/assets/iconhighres.png">
-<link rel="shortcut icon" sizes="128x128" href="/assets/icon.png">
-
-<!-- Bootstrap CSS -->
-<link rel="stylesheet" href="/assets/css/bootstrap.css"/>
-<link rel="stylesheet" href="/assets/css/bootstrap-grid.css"/>
-<link rel="stylesheet" href="/assets/css/bootstrap-reboot.css"/>
-
+{{ template "templates/header.html" . }}
 <body>
 {{if .JobName -}}
     <p>Job sent to scanner: {{.JobName}}</p>
@@ -37,5 +22,9 @@
         </ul>
     </section>
 {{- end}}
+<script src="/assets/js/jquery-3.3.1.slim.min.js"></script>
+<script src="/assets/js/popper.min.js"></script>
+<script src="/assets/js/bootstrap.bundle.js"></script>
+<script src="/assets/js/bootstrap.js"></script>
 </body>
 </html>
