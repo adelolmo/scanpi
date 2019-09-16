@@ -54,16 +54,18 @@ func main() {
 	outputDirectory = os.Getenv("outputDir")
 	fmt.Println(fmt.Sprintf("port: %s, outputDir: %s", port, outputDirectory))
 
-	box := packr.NewBox("./assets")
+	box := packr.NewBox("assets/")
 
-	router := mux.NewRouter().StrictSlash(true)
-	router.Handle("/assets", http.FileServer(box))
+	router := mux.NewRouter()
+	router.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", http.FileServer(box)))
+	//router.PathPrefix("/static/").HandlerFunc(staticHandler)
+	//router.Handle("/static/", http.StripPrefix("/static/", fs))
+	//router.Handle("/assets", http.FileServer(box))
 	router.HandleFunc("/", homePage).Methods("GET")
 	router.HandleFunc("/job", resumeJobPage).Methods("GET")
 	router.HandleFunc("/job", createJobHandler).Methods("POST")
 	router.HandleFunc("/scan", scanHandler).Methods("POST")
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), router))
-
 }
 
 func homePage(w http.ResponseWriter, r *http.Request) {
