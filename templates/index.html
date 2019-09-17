@@ -1,30 +1,13 @@
-{{ template "templates/header.html" . }}
+<!doctype html>
+<html lang="en">
+{{ template "header" }}
 <body>
-{{if .JobName -}}
-    <p>Job sent to scanner: {{.JobName}}</p>
-{{- end}}
-<section>
-    <h2>Create new job</h2>
-    <form id="print" action="/job" method="post">
-        <label for="jobName">Job name:</label>
-        <input id="jobName" name="jobName">
-        <input type="submit" value="Create">
-    </form>
-</section>
-{{if .PreviousJobs -}}
-    <section>
-        <h2>Select previous job</h2>
-        <p>Previous jobs:</p>
-        <ul>
-            {{range $job := .PreviousJobs }}
-                <li><a href="/job?jobName={{$job}}">{{$job}}</a></li>
-            {{- end}}
-        </ul>
-    </section>
-{{- end}}
-<script src="/assets/js/jquery-3.3.1.slim.min.js"></script>
-<script src="/assets/js/popper.min.js"></script>
-<script src="/assets/js/bootstrap.bundle.js"></script>
-<script src="/assets/js/bootstrap.js"></script>
+
+{{ template "navigation" }}
+
+<p>Device: Epson stub</p>
+<p>Status: Available</p>
+
+{{ template "javascript" }}
 </body>
 </html>

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+{{ template "header" }}
+<body>
+
+{{ template "navigation" }}
+
+<form action="/job" method="post">
+    <div class="form-group">
+        <label for="jobName">Job name</label>
+        <input class="form-control" id="jobName" name="jobName" aria-describedby="jobHelp" placeholder="Job name">
+        <small id="jobHelp" class="form-text text-muted">Name to describe the scanning job.</small>
+    </div>
+    <button type="submit" class="btn btn-primary">Create</button>
+</form>
+<br/>
+{{if .PreviousJobs -}}
+    <section>
+        <div class="list-group">
+            <a href="#" class="list-group-item list-group-item-action active">
+                Select job
+            </a>
+            {{range $job := .PreviousJobs }}
+                <a href="/job?jobName={{$job}}" class="list-group-item list-group-item-action">{{$job}}</a>
+            {{- end}}
+        </div>
+    </section>
+{{ else }}
+    <p>No previous jobs found.</p>
+{{- end}}
+{{ template "javascript" }}
+</body>
+</html>

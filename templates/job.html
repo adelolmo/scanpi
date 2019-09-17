@@ -1,21 +1,27 @@
-{{ template "templates/header.html" . }}
+<!doctype html>
+<html lang="en">
+{{ template "header" }}
 <body>
+
+{{ template "navigation" }}
+
 <section>
     <h2>Job: {{.JobName}}</h2>
     <form id="print" action="/scan" method="post">
         <input type="hidden" name="jobName" value="{{.JobName}}"/>
-        <input type="submit" value="Scan">
+        <input class="btn btn-primary" type="submit" value="Scan">
     </form>
 </section>
+<br/>
+
 {{if .Scans -}}
-    <section>
-        <h2>Previous scans</h2>
-        <ul>
-            {{range $scan := .Scans }}
-                <li>{{$scan}}</li>
-            {{- end}}
-        </ul>
-    </section>
+    <ul class="list-group">
+        <li class="list-group-item disabled" aria-disabled="true">Previous scans</li>
+        {{range $scan := .Scans }}
+            <li class="list-group-item">{{$scan}}</li>
+        {{- end}}
+    </ul>
 {{- end}}
+{{ template "javascript" }}
 </body>
 </html>

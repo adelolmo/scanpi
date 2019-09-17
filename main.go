@@ -29,6 +29,8 @@ type scanner struct {
 
 var indexTemplate *template.Template
 var jobTemplate *template.Template
+var jobsTemplate *template.Template
+var settingsTemplate *template.Template
 var outputDirectory string
 
 func init() {
@@ -41,13 +43,25 @@ func init() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	indexTemplate = template.Must(template.New("index.html").ParseFiles(headerFile, indexFile))
+	indexTemplate = template.Must(template.Must(template.New("index").Parse(headerFile)).Parse(indexFile))
 
 	jobFile, err := box.FindString("job.html")
 	if err != nil {
 		log.Fatalln(err)
 	}
-	jobTemplate = template.Must(template.New("job.html").Parse(jobFile))
+	jobTemplate = template.Must(template.Must(template.New("job").Parse(headerFile)).Parse(jobFile))
+
+	jobsFile, err := box.FindString("jobs.html")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	jobsTemplate = template.Must(template.Must(template.New("jobs").Parse(headerFile)).Parse(jobsFile))
+
+	settingsFile, err := box.FindString("settings.html")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	settingsTemplate = template.Must(template.Must(template.New("settings").Parse(headerFile)).Parse(settingsFile))
 }
 
 func main() {
@@ -63,6 +77,9 @@ func main() {
 	router := mux.NewRouter()
 	router.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", http.FileServer(box)))
 	router.HandleFunc("/", homePage).Methods("GET")
+	router.HandleFunc("/settings", showSettingsPage).Methods("GET")
+	router.HandleFunc("/settings", updateSettingsPage).Methods("POST")
+	router.HandleFunc("/jobs", showJobPage).Methods("GET")
 	router.HandleFunc("/job", resumeJobPage).Methods("GET")
 	router.HandleFunc("/job", createJobHandler).Methods("POST")
 	router.HandleFunc("/scan", scanHandler).Methods("POST")
@@ -79,6 +96,35 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 		PreviousJobs: previousJobs,
 	}
 	err := indexTemplate.Execute(w, index)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func showSettingsPage(w http.ResponseWriter, r *http.Request) {
+	err := settingsTemplate.Execute(w, nil)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func updateSettingsPage(w http.ResponseWriter, r *http.Request) {
+	err := settingsTemplate.Execute(w, nil)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func showJobPage(w http.ResponseWriter, r *http.Request) {
+	var previousJobs []string
+	for _, dir := range jobDirectories() {
+		previousJobs = append(previousJobs, dir.Name())
+	}
+
+	index := &index{
+		PreviousJobs: previousJobs,
+	}
+	err := jobsTemplate.Execute(w, index)
 	if err != nil {
 		panic(err)
 	}
