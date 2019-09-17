@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/gobuffalo/packr"
 	"github.com/gorilla/mux"
+	"golang.org/x/image/tiff"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -83,6 +85,7 @@ func main() {
 	router.HandleFunc("/job", resumeJobPage).Methods("GET")
 	router.HandleFunc("/job", createJobHandler).Methods("POST")
 	router.HandleFunc("/scan", scanHandler).Methods("POST")
+	router.HandleFunc("/scan", getFileHandler).Methods("GET")
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), router))
 }
 
@@ -131,12 +134,14 @@ func showJobPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func resumeJobPage(w http.ResponseWriter, r *http.Request) {
-	if err := os.MkdirAll(path.Join(outputDirectory, r.FormValue("jobName")), os.ModePerm); err != nil {
+	jobName := r.FormValue("jobName")
+
+	if err := os.MkdirAll(path.Join(outputDirectory, jobName), os.ModePerm); err != nil {
 		log.Fatalln(err)
 	}
 
 	var scans []string
-	directory := filesOnDirectory(path.Join(outputDirectory, r.FormValue("jobName")))
+	directory := filesOnDirectory(path.Join(outputDirectory, jobName))
 	for _, file := range directory {
 		scans = append(scans, file.Name())
 		println(file.Name())
@@ -144,7 +149,7 @@ func resumeJobPage(w http.ResponseWriter, r *http.Request) {
 
 	scanner := &scanner{
 		Scans:   scans,
-		JobName: r.FormValue("jobName"),
+		JobName: jobName,
 	}
 	if err := jobTemplate.Execute(w, scanner); err != nil {
 		log.Fatalln(err)
@@ -204,6 +209,35 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 	if err := jobTemplate.Execute(w, scanner); err != nil {
 		log.Fatalln(err)
 	}
+}
+
+func getFileHandler(w http.ResponseWriter, r *http.Request) {
+	jobName := r.FormValue("jobName")
+	scan := r.FormValue("scan")
+	w.Header().Set("Content-Type", "image/tiff")
+
+	file, err := ioutil.ReadFile(path.Join(outputDirectory, jobName, scan))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	reader := bytes.NewReader(file)
+	image, err := tiff.Decode(reader)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	options := &tiff.Options{
+		Compression: tiff.CCITTGroup3,
+	}
+	if err = tiff.Encode(w, image, options); err != nil {
+		log.Fatalln(err)
+	}
+
+	/*		i, err := w.Write(file)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			println(i)*/
 }
 
 func scan(path string) error {

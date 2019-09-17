@@ -56,12 +56,25 @@
   revision = "18d060b6b4f28350cb92f79d63b2f558e634dcea"
   version = "v1.3.2"
 
+[[projects]]
+  branch = "master"
+  digest = "1:ea0fa6b2590bc6bc843f15042ac8e6807636e7d014bb0dafcf4b5052a9e836f4"
+  name = "golang.org/x/image"
+  packages = [
+    "ccitt",
+    "tiff",
+    "tiff/lzw",
+  ]
+  pruneopts = "UT"
+  revision = "69e4b8554b2a817a1f0015867f0858d02801f0f5"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/gobuffalo/packr",
     "github.com/gorilla/mux",
+    "golang.org/x/image/tiff",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

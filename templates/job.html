@@ -14,14 +14,23 @@
 </section>
 <br/>
 
-{{if .Scans -}}
-    <ul class="list-group">
-        <li class="list-group-item disabled" aria-disabled="true">Previous scans</li>
+<div class="card-group">
+    {{if .Scans -}}
+        {{ $jobName := .JobName }}
         {{range $scan := .Scans }}
-            <li class="list-group-item">{{$scan}}</li>
+            <div class="card">
+                <img class="card-img-top" src="/scan?jobName={{$jobName}}&scan={{$scan}}" alt="{{$scan}}">
+                <div class="card-body">
+                    <h5 class="card-title">{{$scan}}</h5>
+                    <p class="card-text">This is a wider card with supporting text below as a natural lead-in to
+                        additional content. This content is a little bit longer.</p>
+                    <p class="card-text"><small class="text-muted">Last updated 3 mins ago</small></p>
+                </div>
+            </div>
         {{- end}}
-    </ul>
-{{- end}}
+    {{- end}}
+</div>
+
 {{ template "javascript" }}
 </body>
 </html>
