@@ -227,7 +227,7 @@ func getFileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	options := &tiff.Options{
-		Compression: tiff.CCITTGroup3,
+		Compression: tiff.Uncompressed,
 	}
 	if err = tiff.Encode(w, image, options); err != nil {
 		log.Fatalln(err)
