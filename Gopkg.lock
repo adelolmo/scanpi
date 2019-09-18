@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  digest = "1:80154261f3a8bd25b0c4f229fa007ebe8f1fef3b7be9363512b0e72b1543ce70"
+  name = "github.com/disintegration/imaging"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "9aab30e6aa535fe3337b489b76759ef97dfaf362"
+  version = "v1.6.1"
+
+[[projects]]
   digest = "1:57ae8919194013fb07b8390fb8a32e700c12fdab96e8dc4bb15d5fe45dc43245"
   name = "github.com/gobuffalo/envy"
   packages = ["."]
@@ -58,9 +66,10 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ea0fa6b2590bc6bc843f15042ac8e6807636e7d014bb0dafcf4b5052a9e836f4"
+  digest = "1:1ca6ea3e1d42e6929a96a8131fe72738f07b3bb84875cacd05a2d9a6108806f9"
   name = "golang.org/x/image"
   packages = [
+    "bmp",
     "ccitt",
     "tiff",
     "tiff/lzw",
@@ -72,9 +81,9 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/disintegration/imaging",
     "github.com/gobuffalo/packr",
     "github.com/gorilla/mux",
-    "golang.org/x/image/tiff",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

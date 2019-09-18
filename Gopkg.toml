@@ -37,6 +37,11 @@
   name = "github.com/gobuffalo/packr"
   version = "2.6.0"
 
+
 [[constraint]]
-  name = "golang.org/x/image"
-  branch = "master"
+  name = "github.com/disintegration/imaging"
+  version = "1.6.1"
+
+#[[constraint]]
+#  name = "golang.org/x/image"
+#  branch = "master"

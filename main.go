@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/disintegration/imaging"
 	"github.com/gobuffalo/packr"
 	"github.com/gorilla/mux"
+	"golang.org/x/image/tiff"
 	"html/template"
+	"image/jpeg"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -39,7 +43,13 @@ var indexTemplate *template.Template
 var jobTemplate *template.Template
 var jobsTemplate *template.Template
 var settingsTemplate *template.Template
-var outputDirectory string
+
+type configuration struct {
+	OutputDirectory string
+	WorkDirectory   string
+}
+
+var appConfiguration configuration
 
 func init() {
 	box := packr.NewBox("./templates")
@@ -77,7 +87,12 @@ func main() {
 	if port == "" {
 		port = "8000"
 	}
-	outputDirectory = os.Getenv("outputDir")
+	outputDirectory := os.Getenv("outputDir")
+	workDirectory := os.Getenv("workDir")
+	appConfiguration = configuration{
+		OutputDirectory: outputDirectory,
+		WorkDirectory:   workDirectory,
+	}
 	fmt.Println(fmt.Sprintf("port: %s, outputDir: %s", port, outputDirectory))
 
 	box := packr.NewBox("assets/")
@@ -92,6 +107,7 @@ func main() {
 	router.HandleFunc("/job", createJobHandler).Methods("POST")
 	router.HandleFunc("/scan", scanHandler).Methods("POST")
 	router.HandleFunc("/scan", getFileHandler).Methods("GET")
+	router.HandleFunc("/preview", previewHandler).Methods("GET")
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), router))
 }
 
@@ -111,13 +127,14 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func showSettingsPage(w http.ResponseWriter, r *http.Request) {
-	if _, err := os.Stat("/home/adelolmo/tmp/settings.json"); os.IsNotExist(err) {
+	settingsFile := path.Join(appConfiguration.WorkDirectory, "settings.json")
+	if _, err := os.Stat(settingsFile); os.IsNotExist(err) {
 		if err = settingsTemplate.Execute(w, &settings{}); err != nil {
 			log.Fatalln(err)
 		}
 		return
 	}
-	file, err := ioutil.ReadFile("/home/adelolmo/tmp/settings.json")
+	file, err := ioutil.ReadFile(settingsFile)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -143,7 +160,7 @@ func updateSettingsPage(w http.ResponseWriter, r *http.Request) {
 		Updated:    true,
 	}
 	settingsJson, _ := json.Marshal(settings)
-	if err := ioutil.WriteFile("/home/adelolmo/tmp/settings.json", settingsJson, 0644); err != nil {
+	if err := ioutil.WriteFile(path.Join(appConfiguration.WorkDirectory, "settings.json"), settingsJson, 0644); err != nil {
 		log.Fatalln(err)
 	}
 
@@ -170,12 +187,12 @@ func showJobPage(w http.ResponseWriter, r *http.Request) {
 func resumeJobPage(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
 
-	if err := os.MkdirAll(path.Join(outputDirectory, jobName), os.ModePerm); err != nil {
+	if err := os.MkdirAll(path.Join(appConfiguration.OutputDirectory, jobName), os.ModePerm); err != nil {
 		log.Fatalln(err)
 	}
 
 	var scans []string
-	directory := filesOnDirectory(path.Join(outputDirectory, jobName))
+	directory := filesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
 	for _, file := range directory {
 		scans = append(scans, file.Name())
 		println(file.Name())
@@ -192,12 +209,12 @@ func resumeJobPage(w http.ResponseWriter, r *http.Request) {
 
 func createJobHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
-	if err := os.MkdirAll(path.Join(outputDirectory, jobName), os.ModePerm); err != nil {
+	if err := os.MkdirAll(path.Join(appConfiguration.OutputDirectory, jobName, "preview"), os.ModePerm); err != nil {
 		log.Fatalln(err)
 	}
 
 	var scans []string
-	for _, file := range filesOnDirectory(path.Join(outputDirectory, jobName)) {
+	for _, file := range filesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName)) {
 		scans = append(scans, file.Name())
 	}
 
@@ -212,7 +229,7 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 
 func scanHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
-	previousScans := filesOnDirectory(path.Join(outputDirectory, jobName))
+	previousScans := filesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
 
 	scanName := "1.tiff"
 	/*for _, scanFilename := range previousScans {
@@ -226,7 +243,7 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		scanName = fmt.Sprintf("%d.tiff", lastScanNumber+1)
 	}
 
-	err := scan(path.Join(outputDirectory, jobName, scanName))
+	err := scan(path.Join(appConfiguration.OutputDirectory, jobName, scanName))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -249,36 +266,55 @@ func getFileHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
 	scan := r.FormValue("scan")
 
-	file, err := ioutil.ReadFile(path.Join(outputDirectory, jobName, scan))
+	file, err := ioutil.ReadFile(path.Join(appConfiguration.OutputDirectory, jobName, scan))
 	if err != nil {
 		log.Fatalln(err)
 	}
-	/*	reader := bytes.NewReader(file)
-		image, err := tiff.Decode(reader)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-
-		options := &tiff.Options{
-			Compression: tiff.Uncompressed,
-		}
-		buffer := new(bytes.Buffer)
-		if err = tiff.Encode(buffer, image, options); err != nil {
-			log.Println("unable to encode image.")
-		}*/
 
 	w.Header().Set("Content-Type", "image/tiff")
 	w.Header().Set("Content-Length", strconv.Itoa(len(file)))
 	if _, err := w.Write(file); err != nil {
+		log.Println("unable to write image.", err)
+	}
+}
+
+func previewHandler(w http.ResponseWriter, r *http.Request) {
+	jobName := r.FormValue("jobName")
+	scan := r.FormValue("scan")
+
+	previewFilename := path.Join(appConfiguration.OutputDirectory, jobName, "preview", scan+".jpeg")
+	if _, err := os.Stat(previewFilename); os.IsNotExist(err) {
+		file, err := ioutil.ReadFile(path.Join(appConfiguration.OutputDirectory, jobName, scan))
+		if err != nil {
+			log.Fatalln(err)
+		}
+		srcImage, err := tiff.Decode(bytes.NewReader(file))
+		if err != nil {
+			log.Fatalln(err)
+		}
+		dst := imaging.Resize(srcImage, 100, 100, imaging.Lanczos)
+		//dst := imaging.CropAnchor(srcImage, 100, 100, imaging.Center)
+		err = imaging.Save(dst, previewFilename)
+		if err != nil {
+			log.Fatalf("failed to save image: %v", err)
+		}
+	}
+
+	preview, err := imaging.Open(previewFilename)
+	if err != nil {
+		log.Fatalf("failed to open image: %v", err)
+	}
+	buf := new(bytes.Buffer)
+	if err := jpeg.Encode(buf, preview, nil); err != nil {
+		log.Fatalf("failed to encode preview: %v", err)
+	}
+
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("Content-Length", strconv.Itoa(len(buf.Bytes())))
+	if _, err := w.Write(buf.Bytes()); err != nil {
 		log.Println("unable to write image.")
 	}
 
-	/*		i, err := w.Write(file)
-			if err != nil {
-				log.Fatalln(err)
-			}
-			println(i)*/
 }
 
 func scan(path string) error {
@@ -297,7 +333,7 @@ func scan(path string) error {
 }
 
 func jobDirectories() []os.FileInfo {
-	files, err := ioutil.ReadDir(outputDirectory)
+	files, err := ioutil.ReadDir(appConfiguration.OutputDirectory)
 	if err != nil {
 		log.Fatal(err)
 	}
