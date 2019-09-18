@@ -1,11 +1,10 @@
 package main
 
 import (
-	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/gobuffalo/packr"
 	"github.com/gorilla/mux"
-	"golang.org/x/image/tiff"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -17,6 +16,13 @@ import (
 	"strconv"
 	"strings"
 )
+
+type settings struct {
+	Mode       string `json:"mode"`
+	Format     string `json:"format"`
+	Resolution string `json:"resolution"`
+	Updated    bool   `json:"-"`
+}
 
 type index struct {
 	Title        string
@@ -105,16 +111,44 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func showSettingsPage(w http.ResponseWriter, r *http.Request) {
-	err := settingsTemplate.Execute(w, nil)
+	if _, err := os.Stat("/home/adelolmo/tmp/settings.json"); os.IsNotExist(err) {
+		if err = settingsTemplate.Execute(w, &settings{}); err != nil {
+			log.Fatalln(err)
+		}
+		return
+	}
+	file, err := ioutil.ReadFile("/home/adelolmo/tmp/settings.json")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	settings := &settings{}
+	if err = json.Unmarshal(file, settings); err != nil {
+		log.Fatalln(err)
+	}
+
+	err = settingsTemplate.Execute(w, settings)
 	if err != nil {
 		panic(err)
 	}
 }
 
 func updateSettingsPage(w http.ResponseWriter, r *http.Request) {
-	err := settingsTemplate.Execute(w, nil)
-	if err != nil {
-		panic(err)
+	mode := r.FormValue("mode")
+	format := r.FormValue("format")
+	resolution := r.FormValue("resolution")
+	settings := &settings{
+		Mode:       mode,
+		Format:     format,
+		Resolution: resolution,
+		Updated:    true,
+	}
+	settingsJson, _ := json.Marshal(settings)
+	if err := ioutil.WriteFile("/home/adelolmo/tmp/settings.json", settingsJson, 0644); err != nil {
+		log.Fatalln(err)
+	}
+
+	if err := settingsTemplate.Execute(w, settings); err != nil {
+		log.Fatalln(err)
 	}
 }
 
@@ -214,23 +248,30 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 func getFileHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
 	scan := r.FormValue("scan")
-	w.Header().Set("Content-Type", "image/tiff")
 
 	file, err := ioutil.ReadFile(path.Join(outputDirectory, jobName, scan))
 	if err != nil {
 		log.Fatalln(err)
 	}
-	reader := bytes.NewReader(file)
-	image, err := tiff.Decode(reader)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	/*	reader := bytes.NewReader(file)
+		image, err := tiff.Decode(reader)
+		if err != nil {
+			log.Fatalln(err)
+		}
 
-	options := &tiff.Options{
-		Compression: tiff.Uncompressed,
-	}
-	if err = tiff.Encode(w, image, options); err != nil {
-		log.Fatalln(err)
+
+		options := &tiff.Options{
+			Compression: tiff.Uncompressed,
+		}
+		buffer := new(bytes.Buffer)
+		if err = tiff.Encode(buffer, image, options); err != nil {
+			log.Println("unable to encode image.")
+		}*/
+
+	w.Header().Set("Content-Type", "image/tiff")
+	w.Header().Set("Content-Length", strconv.Itoa(len(file)))
+	if _, err := w.Write(file); err != nil {
+		log.Println("unable to write image.")
 	}
 
 	/*		i, err := w.Write(file)
