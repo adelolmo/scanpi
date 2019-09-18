@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/disintegration/imaging"
 	"github.com/gobuffalo/packr"
@@ -245,7 +246,7 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := scan(path.Join(appConfiguration.OutputDirectory, jobName, scanName))
 	if err != nil {
-		log.Fatalln(err)
+		log.Println("Unable to start scanning", err)
 	}
 
 	var scans []string
@@ -322,7 +323,7 @@ func scan(path string) error {
 	out, err := exec.Command("/usr/bin/scanimage",
 		"--mode=Color", "--resolution=300", "--format=tiff").Output()
 	if err != nil {
-		return err
+		return errors.New(err.Error() + ". " + string(out))
 	}
 
 	err = ioutil.WriteFile(path, out, 0644)
