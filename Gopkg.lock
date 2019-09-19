@@ -84,6 +84,7 @@
     "github.com/disintegration/imaging",
     "github.com/gobuffalo/packr",
     "github.com/gorilla/mux",
+    "golang.org/x/image/tiff",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
