@@ -305,7 +305,7 @@ func previewHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		dst := imaging.Resize(srcImage, 100, 100, imaging.Lanczos)
+		dst := imaging.Resize(srcImage, 0, 500, imaging.Lanczos)
 		err = imaging.Save(dst, previewPath+".jpeg")
 		if err != nil {
 			fmt.Printf("Cannot save preview on %s. Error: %s\n", previewPath+".jpeg", err)
@@ -319,7 +319,7 @@ func previewHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	preview, err := imaging.Open(strings.TrimSuffix(previewPath, ".thumbnail"))
+	preview, err := imaging.Open(previewPath)
 	if err != nil {
 		fmt.Printf("failed to open image: %v\n", err)
 		w.WriteHeader(http.StatusNotFound)
