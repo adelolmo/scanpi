@@ -193,7 +193,7 @@ func resumeJobPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var scans []string
-	directory := filesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
+	directory := imageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
 	for _, file := range directory {
 		scans = append(scans, file.Name())
 		println(file.Name())
@@ -210,12 +210,12 @@ func resumeJobPage(w http.ResponseWriter, r *http.Request) {
 
 func createJobHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
-	if err := os.MkdirAll(path.Join(appConfiguration.OutputDirectory, jobName, "preview"), os.ModePerm); err != nil {
+	if err := os.MkdirAll(path.Join(appConfiguration.OutputDirectory, jobName), os.ModePerm); err != nil {
 		log.Fatalln(err)
 	}
 
 	var scans []string
-	for _, file := range filesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName)) {
+	for _, file := range imageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName)) {
 		scans = append(scans, file.Name())
 	}
 
@@ -230,11 +230,9 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 
 func scanHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
-	previousScans := filesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
+	previousScans := imageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
 
 	scanName := "1.tiff"
-	/*for _, scanFilename := range previousScans {
-	}*/
 	if len(previousScans) > 0 {
 		lastScanName := previousScans[len(previousScans)-1].Name()
 		lastScanNumber, err := strconv.Atoi(strings.Split(lastScanName, ".")[0])
@@ -283,39 +281,56 @@ func previewHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
 	scan := r.FormValue("scan")
 
-	previewFilename := path.Join(appConfiguration.OutputDirectory, jobName, "preview", scan+".jpeg")
-	if _, err := os.Stat(previewFilename); os.IsNotExist(err) {
-		file, err := ioutil.ReadFile(path.Join(appConfiguration.OutputDirectory, jobName, scan))
+	previewPath := path.Join(appConfiguration.OutputDirectory, jobName, scan+".thumbnail")
+	if _, err := os.Stat(previewPath); os.IsNotExist(err) {
+		log.Println("Generate preview")
+		imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
+		file, err := ioutil.ReadFile(imagePath)
 		if err != nil {
-			log.Fatalln(err)
+			fmt.Printf("Cannot read image on %s. Error: %s\n", imagePath, err)
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 		srcImage, err := tiff.Decode(bytes.NewReader(file))
 		if err != nil {
-			log.Fatalln(err)
+			fmt.Printf("Cannot decode image on %s. Error: %s\n", imagePath, err)
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 		dst := imaging.Resize(srcImage, 100, 100, imaging.Lanczos)
-		//dst := imaging.CropAnchor(srcImage, 100, 100, imaging.Center)
-		err = imaging.Save(dst, previewFilename)
+		err = imaging.Save(dst, previewPath+".jpeg")
 		if err != nil {
-			log.Fatalf("failed to save image: %v", err)
+			fmt.Printf("Cannot save preview on %s. Error: %s\n", previewPath+".jpeg", err)
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if err = os.Rename(previewPath+".jpeg", previewPath); err != nil {
+			fmt.Printf("Cannot rename thumbnail on %s. Error: %s\n", previewPath+".jpeg", err)
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 	}
 
-	preview, err := imaging.Open(previewFilename)
+	preview, err := imaging.Open(strings.TrimSuffix(previewPath, ".thumbnail"))
 	if err != nil {
-		log.Fatalf("failed to open image: %v", err)
+		fmt.Printf("failed to open image: %v\n", err)
+		w.WriteHeader(http.StatusNotFound)
+		return
 	}
 	buf := new(bytes.Buffer)
 	if err := jpeg.Encode(buf, preview, nil); err != nil {
-		log.Fatalf("failed to encode preview: %v", err)
+		fmt.Printf("failed to encode preview: %v\n", err)
+		w.WriteHeader(http.StatusNotFound)
+		return
 	}
 
 	w.Header().Set("Content-Type", "image/jpeg")
 	w.Header().Set("Content-Length", strconv.Itoa(len(buf.Bytes())))
 	if _, err := w.Write(buf.Bytes()); err != nil {
-		log.Println("unable to write image.")
+		fmt.Printf("failed to served preview: %v\n", err)
+		w.WriteHeader(http.StatusNotFound)
+		return
 	}
-
 }
 
 func scan(path string) error {
@@ -352,22 +367,26 @@ func jobDirectories() []os.FileInfo {
 	return files
 }
 
-func filesOnDirectory(dir string) []os.FileInfo {
+func imageFilesOnDirectory(dir string) []os.FileInfo {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		log.Fatal(err)
 	}
 	sort.Slice(files, func(i, j int) bool {
-		//return sort.Strings(files[i].Name(), files[j].Name())
 		return files[i].Name() > files[j].Name()
 	})
-	//sort.Strings()
 	i := 0
 	for _, file := range files {
-		if !file.IsDir() {
-			files[i] = file
-			i++
+		if file.IsDir() {
+			continue
 		}
+		ext := path.Ext(file.Name())
+		if ext != ".tiff" && ext != ".png" && ext != ".jpeg" && ext != ".pnm" {
+			continue
+		}
+		files[i] = file
+		i++
+
 	}
 	files = files[:i]
 	return files
