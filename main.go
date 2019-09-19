@@ -3,8 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/adelolmo/sane-web-client/scanimage"
 	"github.com/disintegration/imaging"
 	"github.com/gobuffalo/packr"
 	"github.com/gorilla/mux"
@@ -15,7 +15,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"path"
 	"sort"
 	"strconv"
@@ -81,6 +80,7 @@ func init() {
 		log.Fatalln(err)
 	}
 	settingsTemplate = template.Must(template.Must(template.New("settings").Parse(headerFile)).Parse(settingsFile))
+
 }
 
 func main() {
@@ -94,7 +94,20 @@ func main() {
 		OutputDirectory: outputDirectory,
 		WorkDirectory:   workDirectory,
 	}
-	fmt.Println(fmt.Sprintf("port: %s, outputDir: %s", port, outputDirectory))
+	fmt.Println(fmt.Sprintf("port: %s, outputDir: %s, workDir: %s", port, outputDirectory, workDirectory))
+
+	settingsFile := path.Join(appConfiguration.WorkDirectory, "settings.json")
+	if _, err := os.Stat(settingsFile); os.IsNotExist(err) {
+		settings := &settings{
+			Mode:       scanimage.Color.String(),
+			Format:     scanimage.Tiff.String(),
+			Resolution: "300",
+		}
+		settingsJson, _ := json.Marshal(settings)
+		if err := ioutil.WriteFile(path.Join(appConfiguration.WorkDirectory, "settings.json"), settingsJson, 0644); err != nil {
+			log.Fatalln(err)
+		}
+	}
 
 	box := packr.NewBox("assets/")
 
@@ -103,7 +116,7 @@ func main() {
 	router.HandleFunc("/", homePage).Methods("GET")
 	router.HandleFunc("/settings", showSettingsPage).Methods("GET")
 	router.HandleFunc("/settings", updateSettingsPage).Methods("POST")
-	router.HandleFunc("/jobs", showJobPage).Methods("GET")
+	router.HandleFunc("/jobs", showJobsPage).Methods("GET")
 	router.HandleFunc("/job", resumeJobPage).Methods("GET")
 	router.HandleFunc("/job", createJobHandler).Methods("POST")
 	router.HandleFunc("/scan", scanHandler).Methods("POST")
@@ -129,12 +142,6 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 
 func showSettingsPage(w http.ResponseWriter, r *http.Request) {
 	settingsFile := path.Join(appConfiguration.WorkDirectory, "settings.json")
-	if _, err := os.Stat(settingsFile); os.IsNotExist(err) {
-		if err = settingsTemplate.Execute(w, &settings{}); err != nil {
-			log.Fatalln(err)
-		}
-		return
-	}
 	file, err := ioutil.ReadFile(settingsFile)
 	if err != nil {
 		log.Fatalln(err)
@@ -170,7 +177,7 @@ func updateSettingsPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func showJobPage(w http.ResponseWriter, r *http.Request) {
+func showJobsPage(w http.ResponseWriter, r *http.Request) {
 	var previousJobs []string
 	for _, dir := range jobDirectories() {
 		previousJobs = append(previousJobs, dir.Name())
@@ -242,7 +249,8 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		scanName = fmt.Sprintf("%d.tiff", lastScanNumber+1)
 	}
 
-	err := scan(path.Join(appConfiguration.OutputDirectory, jobName, scanName))
+	scanJob := scanimage.NewScanJob(scanimage.Color, scanimage.Tiff, 300)
+	err := scanJob.Start(path.Join(appConfiguration.OutputDirectory, jobName, scanName))
 	if err != nil {
 		log.Println("Unable to start scanning", err)
 	}
@@ -331,21 +339,6 @@ func previewHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-}
-
-func scan(path string) error {
-	// su -s /bin/sh - saned
-	out, err := exec.Command("/usr/bin/scanimage",
-		"--mode=Color", "--resolution=300", "--format=tiff").Output()
-	if err != nil {
-		return errors.New(err.Error() + ". " + string(out))
-	}
-
-	err = ioutil.WriteFile(path, out, 0644)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func jobDirectories() []os.FileInfo {
