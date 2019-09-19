@@ -1,16 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/adelolmo/sane-web-client/scanimage"
-	"github.com/disintegration/imaging"
+	"github.com/adelolmo/sane-web-client/thumbnail"
 	"github.com/gobuffalo/packr"
 	"github.com/gorilla/mux"
-	"golang.org/x/image/tiff"
 	"html/template"
-	"image/jpeg"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -289,52 +286,16 @@ func previewHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
 	scan := r.FormValue("scan")
 
-	previewPath := path.Join(appConfiguration.OutputDirectory, jobName, scan+".thumbnail")
-	if _, err := os.Stat(previewPath); os.IsNotExist(err) {
-		log.Println("Generate preview")
-		imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
-		file, err := ioutil.ReadFile(imagePath)
-		if err != nil {
-			fmt.Printf("Cannot read image on %s. Error: %s\n", imagePath, err)
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		srcImage, err := tiff.Decode(bytes.NewReader(file))
-		if err != nil {
-			fmt.Printf("Cannot decode image on %s. Error: %s\n", imagePath, err)
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		dst := imaging.Resize(srcImage, 0, 500, imaging.Lanczos)
-		err = imaging.Save(dst, previewPath+".jpeg")
-		if err != nil {
-			fmt.Printf("Cannot save preview on %s. Error: %s\n", previewPath+".jpeg", err)
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		if err = os.Rename(previewPath+".jpeg", previewPath); err != nil {
-			fmt.Printf("Cannot rename thumbnail on %s. Error: %s\n", previewPath+".jpeg", err)
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-	}
-
-	preview, err := imaging.Open(previewPath)
+	buffer, err := thumbnail.Preview(path.Join(appConfiguration.OutputDirectory, jobName, scan))
 	if err != nil {
-		fmt.Printf("failed to open image: %v\n", err)
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-	buf := new(bytes.Buffer)
-	if err := jpeg.Encode(buf, preview, nil); err != nil {
-		fmt.Printf("failed to encode preview: %v\n", err)
+		fmt.Print(err)
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "image/jpeg")
-	w.Header().Set("Content-Length", strconv.Itoa(len(buf.Bytes())))
-	if _, err := w.Write(buf.Bytes()); err != nil {
+	w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
+	if _, err := w.Write(buffer.Bytes()); err != nil {
 		fmt.Printf("failed to served preview: %v\n", err)
 		w.WriteHeader(http.StatusNotFound)
 		return
