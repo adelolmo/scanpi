@@ -1,0 +1,17 @@
+#!/bin/sh -e
+
+case "$1" in
+    remove)
+        systemctl daemon-reload
+    ;;
+
+    purge)
+        rm -rf /var/lib/sane-web-client
+        rm -f /etc/default/sane-web-client
+        if which ucf >/dev/null; then
+            ucf --purge /etc/default/sane-web-client
+        fi
+    ;;
+esac
+
+exit 0

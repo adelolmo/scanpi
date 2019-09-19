@@ -2,10 +2,10 @@
 *.iml
 build
 obj*
-debian/hd-idle
+debian/sane-web-client
 debian/debhelper-build-stamp
 debian/.debhelper
 debian/files
-debian/hd-idle.debhelper.log
-debian/hd-idle.substvars
+debian/sane-web-client.debhelper.log
+debian/sane-web-client.substvars
 release

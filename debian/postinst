@@ -1,0 +1,16 @@
+#!/bin/sh -e
+
+case "$1" in
+    configure|reconfigure)
+        mkdir -p /var/lib/sane-web-client/jobs
+        mkdir -p /var/lib/sane-web-client/work
+        chown -R saned.saned /var/lib/sane-web-client
+
+        ucf /usr/share/sane-web-client/configuration /etc/default/sane-web-client
+        ucfr sane-web-client /etc/default/sane-web-client
+
+        systemctl daemon-reload
+        systemctl enable sane-web-client
+        systemctl restart sane-web-client
+    ;;
+esac
