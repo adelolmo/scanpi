@@ -4,56 +4,59 @@
 <body>
 
 {{ template "navigation" }}
+<div class="container">
+    <h2>Settings</h2>
 
-<div id="toast" class="toast" style="position: absolute; top: 0; right: 0;" role="alert" aria-live="assertive"
-     aria-atomic="true">
-    <div class="toast-header">
-        <strong class="mr-auto">Settings</strong>
+    <form action="/settings" method="post">
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label for="mode">Mode</label>
+                <select id="mode" name="mode" class="form-control">
+                    {{ if not .Mode }}
+                        <option selected>Choose...</option>{{ end }}
+                    <option {{if eq .Mode "Lineart" }} selected {{end}}>Lineart</option>
+                    <option {{if eq .Mode "Gray" }} selected {{end}}>Gray</option>
+                    <option {{if eq .Mode "Color" }} selected {{end}}>Color</option>
+                </select>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="format">Format</label>
+                <select id="format" name="format" class="form-control">
+                    {{ if not .Format }}
+                        <option selected>Choose...</option>{{ end }}
+                    <option {{if eq .Format "tiff" }} selected {{end}}>tiff</option>
+                    <option {{if eq .Format "png" }} selected {{end}}>png</option>
+                    <option {{if eq .Format "jpeg" }} selected {{end}}>jpeg</option>
+                    <option {{if eq .Format "pnm" }} selected {{end}}>pnm</option>
+                </select>
+            </div>
+            <div class="form-group col-md-4">
+                <label for="resolution">Resolution</label>
+                <select id="resolution" name="resolution" class="form-control">
+                    {{ if not .Resolution }}
+                        <option selected>Choose...</option>{{ end }}
+                    <option {{if eq .Resolution "300" }} selected {{end}}>300</option>
+                    <option {{if eq .Resolution "200" }} selected {{end}}>200</option>
+                    <option {{if eq .Resolution "100" }} selected {{end}}>100</option>
+                </select>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Save</button>
+    </form>
+
+    {{ if .Updated }}
+    <div id="toast" class="toast" style="position: absolute; top: 0; right: 0;" role="alert" aria-live="assertive"
+         aria-atomic="true">
+        <div class="toast-header">
+            <strong class="mr-auto">Settings</strong>
+        </div>
+        <div class="toast-body">
+            Settings saved successfully
+        </div>
     </div>
-    <div class="toast-body">
-        Settings saved successfully
-    </div>
+    {{ end }}
+
 </div>
-
-
-<h2>Settings</h2>
-<form action="/settings" method="post">
-    <div class="form-row">
-        <div class="form-group col-md-4">
-            <label for="mode">Mode</label>
-            <select id="mode" name="mode" class="form-control">
-                {{ if not .Mode }}
-                    <option selected>Choose...</option>{{ end }}
-                <option {{if eq .Mode "Lineart" }} selected {{end}}>Lineart</option>
-                <option {{if eq .Mode "Gray" }} selected {{end}}>Gray</option>
-                <option {{if eq .Mode "Color" }} selected {{end}}>Color</option>
-            </select>
-        </div>
-        <div class="form-group col-md-4">
-            <label for="format">Format</label>
-            <select id="format" name="format" class="form-control">
-                {{ if not .Format }}
-                    <option selected>Choose...</option>{{ end }}
-                <option {{if eq .Format "tiff" }} selected {{end}}>tiff</option>
-                <option {{if eq .Format "png" }} selected {{end}}>png</option>
-                <option {{if eq .Format "jpeg" }} selected {{end}}>jpeg</option>
-                <option {{if eq .Format "pnm" }} selected {{end}}>pnm</option>
-            </select>
-        </div>
-        <div class="form-group col-md-4">
-            <label for="resolution">Resolution</label>
-            <select id="resolution" name="resolution" class="form-control">
-                {{ if not .Resolution }}
-                    <option selected>Choose...</option>{{ end }}
-                <option {{if eq .Resolution "300" }} selected {{end}}>300</option>
-                <option {{if eq .Resolution "200" }} selected {{end}}>200</option>
-                <option {{if eq .Resolution "100" }} selected {{end}}>100</option>
-            </select>
-        </div>
-    </div>
-    <button type="submit" class="btn btn-primary">Save</button>
-</form>
-
 {{ template "javascript" }}
 
 <script>

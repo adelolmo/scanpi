@@ -4,31 +4,33 @@
 <body>
 
 {{ template "navigation" }}
-
-<section>
+<div class="container">
     <h2>Job: {{.JobName}}</h2>
-    <form id="print" action="/scan" method="post">
-        <input type="hidden" name="jobName" value="{{.JobName}}"/>
-        <input class="btn btn-primary" type="submit" value="Scan">
-    </form>
-</section>
-<br/>
 
-<div class="row">
-    <div class="col-sm-6">
-        {{if .Scans -}}
-            {{ $jobName := .JobName }}
-            {{range $scan := .Scans }}
-                <div class="card">
-                    <img class="card-img-top" src="/preview?jobName={{$jobName}}&scan={{$scan}}" alt="{{$scan}}">
-                    <div class="card-footer">
-                        <small class="text-muted">
-                            <a href="/scan?jobName={{$jobName}}&scan={{$scan}}">Download</a>
-                        </small>
+    <section>
+        <form id="print" action="/scan" method="post">
+            <input type="hidden" name="jobName" value="{{.JobName}}"/>
+            <input class="btn btn-primary" type="submit" value="Scan">
+        </form>
+    </section>
+    <br/>
+
+    <div class="row">
+        <div class="col-sm-6">
+            {{if .Scans -}}
+                {{ $jobName := .JobName }}
+                {{range $scan := .Scans }}
+                    <div class="card">
+                        <img class="card-img-top" src="/preview?jobName={{$jobName}}&scan={{$scan}}" alt="{{$scan}}">
+                        <div class="card-footer">
+                            <small class="text-muted">
+                                <a href="/scan?jobName={{$jobName}}&scan={{$scan}}">Download</a>
+                            </small>
+                        </div>
                     </div>
-                </div>
+                {{- end}}
             {{- end}}
-        {{- end}}
+        </div>
     </div>
 </div>
 
