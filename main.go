@@ -18,22 +18,27 @@ import (
 	"strings"
 )
 
+type nav struct {
+	ActiveTab string
+}
 type settings struct {
+	Navigation string `json:"-"`
 	Mode       string `json:"mode"`
 	Format     string `json:"format"`
 	Resolution string `json:"resolution"`
 	Updated    bool   `json:"-"`
 }
 
-type index struct {
-	Title        string
+type pageJobs struct {
+	Navigation   string
 	JobName      string
 	PreviousJobs []string
 }
 
-type scanner struct {
-	JobName string
-	Scans   []string
+type pageScanner struct {
+	Navigation string
+	JobName    string
+	Scans      []string
 }
 
 var indexTemplate *template.Template
@@ -128,12 +133,12 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 		previousJobs = append(previousJobs, dir.Name())
 	}
 
-	index := &index{
-		PreviousJobs: previousJobs,
+	type index struct {
+		Navigation string
 	}
-	err := indexTemplate.Execute(w, index)
+	err := indexTemplate.Execute(w, &index{Navigation: "home"})
 	if err != nil {
-		panic(err)
+		fmt.Println(fmt.Sprintf("Cannot execute index template. Error: %s", err.Error()))
 	}
 }
 
@@ -143,7 +148,9 @@ func showSettingsPage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	settings := &settings{}
+	settings := &settings{
+		Navigation: "jobs",
+	}
 	if err = json.Unmarshal(file, settings); err != nil {
 		log.Fatalln(err)
 	}
@@ -159,6 +166,7 @@ func updateSettingsPage(w http.ResponseWriter, r *http.Request) {
 	format := r.FormValue("format")
 	resolution := r.FormValue("resolution")
 	settings := &settings{
+		Navigation: "jobs",
 		Mode:       mode,
 		Format:     format,
 		Resolution: resolution,
@@ -180,7 +188,8 @@ func showJobsPage(w http.ResponseWriter, r *http.Request) {
 		previousJobs = append(previousJobs, dir.Name())
 	}
 
-	index := &index{
+	index := &pageJobs{
+		Navigation:   "jobs",
 		PreviousJobs: previousJobs,
 	}
 	err := jobsTemplate.Execute(w, index)
@@ -203,9 +212,10 @@ func resumeJobPage(w http.ResponseWriter, r *http.Request) {
 		println(file.Name())
 	}
 
-	scanner := &scanner{
-		Scans:   scans,
-		JobName: jobName,
+	scanner := &pageScanner{
+		Navigation: "jobs",
+		Scans:      scans,
+		JobName:    jobName,
 	}
 	if err := jobTemplate.Execute(w, scanner); err != nil {
 		log.Fatalln(err)
@@ -223,9 +233,10 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 		scans = append(scans, file.Name())
 	}
 
-	scanner := &scanner{
-		Scans:   scans,
-		JobName: jobName,
+	scanner := &pageScanner{
+		Navigation: "jobs",
+		Scans:      scans,
+		JobName:    jobName,
 	}
 	if err := jobTemplate.Execute(w, scanner); err != nil {
 		log.Fatalln(err)
@@ -257,9 +268,10 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		scans = append(scans, file.Name())
 	}
 
-	scanner := &scanner{
-		Scans:   scans,
-		JobName: jobName,
+	scanner := &pageScanner{
+		Navigation: "jobs",
+		Scans:      scans,
+		JobName:    jobName,
 	}
 	if err := jobTemplate.Execute(w, scanner); err != nil {
 		log.Fatalln(err)

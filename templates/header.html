@@ -1,17 +1,17 @@
 {{ define "header" }}
-<head>
-<title>Sane Web Client</title>
-<!-- Required meta tags -->
-<meta charset="utf-8">
-<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0'/>
-<meta name="mobile-web-app-capable" content="yes">
+    <head>
+        <title>Sane Web Client</title>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0'/>
+        <meta name="mobile-web-app-capable" content="yes">
 
-<link rel="shortcut icon" sizes="196x196" href="/assets/iconhighres.png">
-<link rel="shortcut icon" sizes="128x128" href="/assets/icon.png">
+        <link rel="shortcut icon" sizes="196x196" href="/assets/iconhighres.png">
+        <link rel="shortcut icon" sizes="128x128" href="/assets/icon.png">
 
-<!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
-</head>
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+    </head>
 {{end}}
 
 {{ define "javascript" }}
@@ -21,25 +21,26 @@
 {{ end }}
 
 {{ define "navigation" }}
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <a class="navbar-brand" href="#">
-        <img src="/assets/iconhighres.png" width="30" height="30" class="d-inline-block align-top" alt="">
-        Sane</a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav">
-            <li class="nav-item active">
-                <a class="nav-link" href="/">Home</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/jobs">Jobs</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/settings">Settings</a>
-            </li>
-        </ul>
-    </div>
-</nav>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">
+            <img src="/assets/iconhighres.png" width="30" height="30" class="d-inline-block align-top" alt="">
+            Sane</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item {{ if not .Navigation }}active{{ end }}">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item" {{ if eq .Navigation "jobs" }}active{{ end }}>
+                    <a class="nav-link" href="/jobs">Jobs</a>
+                </li>
+                <li class="nav-item" {{ if eq .Navigation "settings" }}active{{ end }}>
+                    <a class="nav-link" href="/settings">Settings</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
 {{ end }}

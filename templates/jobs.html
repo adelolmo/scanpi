@@ -8,6 +8,7 @@
 <div class="container">
     <h2>Jobs</h2>
 
+    <h3>Create new job</h3>
     <form action="/job" method="post">
         <div class="form-group">
             <label for="jobName">Job name</label>
@@ -18,16 +19,13 @@
     </form>
     <br/>
     {{if .PreviousJobs -}}
-        <section>
-            <div class="list-group">
-                <a href="#" class="list-group-item list-group-item-action active">
-                    Select job
-                </a>
-                {{range $job := .PreviousJobs }}
-                    <a href="/job?jobName={{$job}}" class="list-group-item list-group-item-action">{{$job}}</a>
-                {{- end}}
-            </div>
-        </section>
+        <h3>Select job</h3>
+        <div class="list-group">
+            {{range $job := .PreviousJobs }}
+                <a href="/job?jobName={{$job}}" class="list-group-item list-group-item-action">{{$job}}</a>
+            {{- end}}
+        </div>
+
     {{ else }}
         <p>No previous jobs found.</p>
     {{- end}}
