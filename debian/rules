@@ -51,7 +51,6 @@ override_dh_clean:
 override_dh_auto_build:
 	dh_auto_build -- -ldflags "-s -w"
 	go get github.com/gobuffalo/packr/packr
-	$(GO) build -o $(BUILD_DIR)/bin/$(GIT_REPO_NAME)
 	##
 	# From git-lfs/git-lfs repo:
 	# dh_golang doesn't do anything here in deb 8, and it's needed in both
@@ -60,6 +59,7 @@ override_dh_auto_build:
 		cp -rf $(BUILD_DIR)/bin/*/* $(BUILD_DIR)/bin/; \
 		cp -rf $(BUILD_DIR)/pkg/*/* $(BUILD_DIR)/pkg/; \
 	fi
+	$(GO) build -o $(BUILD_DIR)/bin/$(GIT_REPO_NAME)
 
 override_dh_strip:
 	##
