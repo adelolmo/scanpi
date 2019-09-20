@@ -15,7 +15,6 @@ func Preview(originalImage string) (*bytes.Buffer, error) {
 	previewPath := originalImage + ".thumbnail"
 	if _, err := os.Stat(previewPath); os.IsNotExist(err) {
 		fmt.Println("Generate preview")
-		//imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
 		file, err := ioutil.ReadFile(originalImage)
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("Cannot read image on %s. Error: %s\n", originalImage, err))

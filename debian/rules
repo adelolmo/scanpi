@@ -50,8 +50,7 @@ override_dh_clean:
 
 override_dh_auto_build:
 	dh_auto_build -- -ldflags "-s -w"
-	echo "gopath: $(GOPATH)"
-    #go get -u github.com/gobuffalo/packr/packr
+	go get github.com/gobuffalo/packr/packr
 	$(GO) build -o $(BUILD_DIR)/bin/$(GIT_REPO_NAME)
 	##
 	# From git-lfs/git-lfs repo:

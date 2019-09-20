@@ -68,7 +68,7 @@ func (s *Scan) Start(path string) error {
 	// su -s /bin/sh - saned
 	out, err := exec.Command("/usr/bin/scanimage",
 		fmt.Sprintf("--mode=%s", s.Mode.String()),
-		"--resolution=300",
+		fmt.Sprintf("--resolution=%d", s.Resolution),
 		fmt.Sprintf("--format=%s", s.Format.String())).Output()
 	if err != nil {
 		return errors.New(err.Error() + ". " + string(out))
