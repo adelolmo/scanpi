@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/adelolmo/sane-web-client/fs"
 	"github.com/adelolmo/sane-web-client/scanimage"
 	"github.com/adelolmo/sane-web-client/thumbnail"
 	"github.com/gobuffalo/packr"
@@ -13,7 +14,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -124,7 +124,7 @@ func main() {
 
 func homePage(w http.ResponseWriter, r *http.Request) {
 	var previousJobs []string
-	for _, dir := range jobDirectories() {
+	for _, dir := range fs.JobDirectories(appConfiguration.OutputDirectory) {
 		previousJobs = append(previousJobs, dir.Name())
 	}
 
@@ -176,7 +176,7 @@ func updateSettingsPage(w http.ResponseWriter, r *http.Request) {
 
 func showJobsPage(w http.ResponseWriter, r *http.Request) {
 	var previousJobs []string
-	for _, dir := range jobDirectories() {
+	for _, dir := range fs.JobDirectories(appConfiguration.OutputDirectory) {
 		previousJobs = append(previousJobs, dir.Name())
 	}
 
@@ -197,7 +197,7 @@ func resumeJobPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var scans []string
-	directory := imageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
+	directory := fs.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
 	for _, file := range directory {
 		scans = append(scans, file.Name())
 		println(file.Name())
@@ -219,7 +219,7 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var scans []string
-	for _, file := range imageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName)) {
+	for _, file := range fs.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName)) {
 		scans = append(scans, file.Name())
 	}
 
@@ -234,7 +234,7 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 
 func scanHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
-	previousScans := imageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
+	previousScans := fs.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
 
 	scanName := "1.tiff"
 	if len(previousScans) > 0 {
@@ -300,48 +300,4 @@ func previewHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-}
-
-func jobDirectories() []os.FileInfo {
-	files, err := ioutil.ReadDir(appConfiguration.OutputDirectory)
-	if err != nil {
-		log.Fatal(err)
-	}
-	sort.Slice(files, func(i, j int) bool {
-		return files[i].ModTime().After(files[j].ModTime())
-	})
-	i := 0
-	for _, file := range files {
-		if file.IsDir() {
-			files[i] = file
-			i++
-		}
-	}
-	files = files[:i]
-	return files
-}
-
-func imageFilesOnDirectory(dir string) []os.FileInfo {
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		log.Fatal(err)
-	}
-	sort.Slice(files, func(i, j int) bool {
-		return files[i].Name() > files[j].Name()
-	})
-	i := 0
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		}
-		ext := path.Ext(file.Name())
-		if ext != ".tiff" && ext != ".png" && ext != ".jpeg" && ext != ".pnm" {
-			continue
-		}
-		files[i] = file
-		i++
-
-	}
-	files = files[:i]
-	return files
 }
