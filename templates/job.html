@@ -3,9 +3,9 @@
 {{ template "header" }}
 <body>
 
-{{ template "navigation" }}
+{{ template "nav" . }}
 <div class="container">
-    <h2>Job: {{.JobName}}</h2>
+    <h2>{{.JobName}}</h2>
 
     <section>
         <form id="print" action="/scan" method="post">

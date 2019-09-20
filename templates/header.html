@@ -20,7 +20,7 @@
     <script src="assets/js/bootstrap.min.js"></script>
 {{ end }}
 
-{{ define "navigation" }}
+{{ define "nav" }}
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <a class="navbar-brand" href="#">
             <img src="/assets/iconhighres.png" width="30" height="30" class="d-inline-block align-top" alt="">
@@ -31,13 +31,13 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
-                <li class="nav-item {{ if not .Navigation }}active{{ end }}">
+                <li class="nav-item {{ if eq .Navigation "home" }}active{{ end }}">
                     <a class="nav-link" href="/">Home</a>
                 </li>
-                <li class="nav-item" {{ if eq .Navigation "jobs" }}active{{ end }}>
+                <li class="nav-item {{ if eq .Navigation "jobs" }}active{{ end }}">
                     <a class="nav-link" href="/jobs">Jobs</a>
                 </li>
-                <li class="nav-item" {{ if eq .Navigation "settings" }}active{{ end }}>
+                <li class="nav-item {{ if eq .Navigation "settings" }}active{{ end }}">
                     <a class="nav-link" href="/settings">Settings</a>
                 </li>
             </ul>

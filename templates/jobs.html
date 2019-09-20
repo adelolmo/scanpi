@@ -3,11 +3,9 @@
 {{ template "header" }}
 <body>
 
-{{ template "navigation" }}
+{{ template "nav" . }}
 
 <div class="container">
-    <h2>Jobs</h2>
-
     <h3>Create new job</h3>
     <form action="/job" method="post">
         <div class="form-group">

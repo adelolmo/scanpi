@@ -3,10 +3,8 @@
 {{ template "header" }}
 <body>
 
-{{ template "navigation" }}
+{{ template "nav" . }}
 <div class="container">
-    <h2>Settings</h2>
-
     <form action="/settings" method="post">
         <div class="form-row">
             <div class="form-group col-md-4">

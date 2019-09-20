@@ -149,7 +149,7 @@ func showSettingsPage(w http.ResponseWriter, r *http.Request) {
 		log.Fatalln(err)
 	}
 	settings := &settings{
-		Navigation: "jobs",
+		Navigation: "settings",
 	}
 	if err = json.Unmarshal(file, settings); err != nil {
 		log.Fatalln(err)
@@ -166,7 +166,7 @@ func updateSettingsPage(w http.ResponseWriter, r *http.Request) {
 	format := r.FormValue("format")
 	resolution := r.FormValue("resolution")
 	settings := &settings{
-		Navigation: "jobs",
+		Navigation: "settings",
 		Mode:       mode,
 		Format:     format,
 		Resolution: resolution,
