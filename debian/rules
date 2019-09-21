@@ -45,9 +45,10 @@ export DH_GOLANG_INSTALL_ALL := 1
 	dh $@ --buildsystem=golang --with=golang
 
 override_dh_clean:
-	rm -f debian/$(GIT_REPO_NAME).debhelper.log
-	rm -rf $(BUILD_DIR)
 	dh_clean
+	rm -f debian/$(GIT_REPO_NAME).debhelper.log
+	rm -rf debian/$(GIT_REPO_NAME)
+	rm -rf $(BUILD_DIR)
 
 override_dh_auto_build:
 	dh_auto_build -- -ldflags "-s -w"

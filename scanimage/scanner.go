@@ -1,10 +1,10 @@
 package scanimage
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os/exec"
+	"strings"
 )
 
 type Mode int
@@ -25,6 +25,21 @@ func (m Mode) String() string {
 		return "Lineart"
 	default:
 		return "Gray"
+	}
+}
+
+func ToMode(mode string) Mode {
+	formattedMode := strings.Title(mode)
+	if formattedMode == "Color" {
+		return Color
+	}
+	if formattedMode == "Gray" {
+		return Gray
+	}
+	if formattedMode == "Lineart" {
+		return Lineart
+	} else {
+		return Color
 	}
 }
 
@@ -52,6 +67,24 @@ func (f Format) String() string {
 	}
 }
 
+func ToFormat(format string) Format {
+	formattedMode := strings.Title(format)
+	if formattedMode == "Tiff" {
+		return Tiff
+	}
+	if formattedMode == "Jpeg" {
+		return Jpeg
+	}
+	if formattedMode == "Png" {
+		return Png
+	}
+	if formattedMode == "Pnm" {
+		return Pnm
+	} else {
+		return Tiff
+	}
+}
+
 type Scan struct {
 	Mode       Mode
 	Format     Format
@@ -64,19 +97,24 @@ func NewScanJob(mode Mode, format Format, resolution int) *Scan {
 		Resolution: resolution}
 }
 
-func (s *Scan) Start(path string) error {
-	// su -s /bin/sh - saned
-	out, err := exec.Command("/usr/bin/scanimage",
-		fmt.Sprintf("--mode=%s", s.Mode.String()),
-		fmt.Sprintf("--resolution=%d", s.Resolution),
-		fmt.Sprintf("--format=%s", s.Format.String())).Output()
-	if err != nil {
-		return errors.New(err.Error() + ". " + string(out))
-	}
+func (s *Scan) Start(path string) {
+	go func() {
+		fmt.Println("Scanning process. Start")
+		// su -s /bin/sh - saned
+		command := exec.Command("/usr/bin/scanimage",
+			fmt.Sprintf("--mode=%s", s.Mode.String()),
+			fmt.Sprintf("--resolution=%d", s.Resolution),
+			fmt.Sprintf("--format=%s", s.Format.String()))
+		fmt.Println(command.Args)
+		out, err := command.Output()
+		if err != nil {
+			fmt.Println(fmt.Sprintf("Error executing scanimage command. Output: %s\n", out), err)
+		}
 
-	err = ioutil.WriteFile(path, out, 0644)
-	if err != nil {
-		return err
-	}
-	return nil
+		err = ioutil.WriteFile(path, out, 0644)
+		if err != nil {
+			fmt.Println(fmt.Sprintf("Cannot write image file on %s. Error: %s\n", path, err))
+		}
+		fmt.Println("Scanning process. End")
+	}()
 }

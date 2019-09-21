@@ -32,8 +32,34 @@
             {{- end}}
         </div>
     </div>
+
+    {{ if .JobStarted }}
+        <div id="toast" class="toast" style="position: absolute; top: 0; right: 0;" role="alert" aria-live="assertive"
+             aria-atomic="true">
+            <div class="toast-header">
+                <strong class="mr-auto">Scanner</strong>
+            </div>
+            <div class="toast-body">
+                Scanning job started
+            </div>
+        </div>
+    {{ end }}
+
 </div>
 
 {{ template "javascript" }}
+
+<script>
+    $(document).ready(function () {
+        {{ if .JobStarted }}
+        $("#toast").toast({
+                animation: true,
+                delay: 3000
+            }
+        );
+        $("#toast").toast('show');
+        {{ end }}
+    });
+</script>
 </body>
 </html>

@@ -14,7 +14,8 @@ import (
 func Preview(originalImage string) (*bytes.Buffer, error) {
 	previewPath := originalImage + ".thumbnail"
 	if _, err := os.Stat(previewPath); os.IsNotExist(err) {
-		fmt.Println("Generate preview")
+		fmt.Println("Generating preview. Start")
+
 		file, err := ioutil.ReadFile(originalImage)
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("Cannot read image on %s. Error: %s\n", originalImage, err))
@@ -31,6 +32,7 @@ func Preview(originalImage string) (*bytes.Buffer, error) {
 		if err = os.Rename(previewPath+".jpeg", previewPath); err != nil {
 			return nil, errors.New(fmt.Sprintf("Cannot rename thumbnail on %s. Error: %s\n", previewPath+".jpeg", err))
 		}
+		fmt.Println("Generating preview. End")
 	}
 
 	preview, err := imaging.Open(previewPath)

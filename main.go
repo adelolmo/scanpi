@@ -36,6 +36,7 @@ type pageScanner struct {
 	Navigation string
 	JobName    string
 	Scans      []string
+	JobStarted bool
 }
 
 var indexTemplate *template.Template
@@ -140,19 +141,8 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 }
 
 func showSettingsPage(w http.ResponseWriter, r *http.Request) {
-	settingsFile := path.Join(appConfiguration.WorkDirectory, "settings.json")
-	file, err := ioutil.ReadFile(settingsFile)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	settings := &settings{
-		Navigation: "settings",
-	}
-	if err = json.Unmarshal(file, settings); err != nil {
-		log.Fatalln(err)
-	}
-
-	err = settingsTemplate.Execute(w, settings)
+	settings := readSettings()
+	err := settingsTemplate.Execute(w, settings)
 	if err != nil {
 		panic(err)
 	}
@@ -253,12 +243,16 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		scanName = fmt.Sprintf("%d.tiff", lastScanNumber+1)
 	}
-
-	scanJob := scanimage.NewScanJob(scanimage.Color, scanimage.Tiff, 300)
-	err := scanJob.Start(path.Join(appConfiguration.OutputDirectory, jobName, scanName))
-	if err != nil {
+	settings := readSettings()
+	resolution, _ := strconv.Atoi(settings.Resolution)
+	scanJob := scanimage.NewScanJob(
+		scanimage.ToMode(settings.Mode),
+		scanimage.ToFormat(settings.Format),
+		resolution)
+	scanJob.Start(path.Join(appConfiguration.OutputDirectory, jobName, scanName))
+	/*if err != nil {
 		log.Println("Unable to start scanning", err)
-	}
+	}*/
 
 	var scans []string
 	for _, file := range previousScans {
@@ -269,6 +263,7 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		Navigation: "jobs",
 		Scans:      scans,
 		JobName:    jobName,
+		JobStarted: true,
 	}
 	if err := jobTemplate.Execute(w, scanner); err != nil {
 		log.Fatalln(err)
@@ -309,4 +304,19 @@ func previewHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+}
+
+func readSettings() *settings {
+	settingsFile := path.Join(appConfiguration.WorkDirectory, "settings.json")
+	file, err := ioutil.ReadFile(settingsFile)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	settings := &settings{
+		Navigation: "settings",
+	}
+	if err = json.Unmarshal(file, settings); err != nil {
+		log.Fatalln(err)
+	}
+	return settings
 }
