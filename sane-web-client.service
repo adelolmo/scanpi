@@ -7,6 +7,7 @@ User=saned
 Group=saned
 EnvironmentFile=/etc/default/sane-web-client
 ExecStart=/usr/bin/sane-web-client
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target

@@ -18,9 +18,6 @@ import (
 	"strings"
 )
 
-type nav struct {
-	ActiveTab string
-}
 type settings struct {
 	Navigation string `json:"-"`
 	Mode       string `json:"mode"`

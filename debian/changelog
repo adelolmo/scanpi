@@ -1,5 +1,6 @@
 sane-web-client (1.0) unstable; urgency=medium
 
-  * Scans and thumbnails.
+  * Start scan with custom settings: resolution, mode and format.
+  * Show scan thumbnails.
 
  -- Andoni del Olmo <andoni.delolmo@gmail.com>  Sun, 19 Sep 2019 10:01:10 +0100
