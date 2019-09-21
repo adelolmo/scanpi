@@ -5,14 +5,22 @@
 
 {{ template "nav" . }}
 <div class="container">
-    <h2>{{.JobName}}</h2>
+    <h2>{{.JobName}}&nbsp;&nbsp;&nbsp;
+        {{ if .JobStarted }}
+            <button type="button" class="btn btn-outline-success"
+                    onClick="window.location.href='/job?jobName={{.JobName}}'">Refresh
+            </button>
+        {{end}}
+    </h2>
 
     <section>
         <form id="print" action="/scan" method="post">
             <input type="hidden" name="jobName" value="{{.JobName}}"/>
-            <input class="btn btn-primary btn-lg btn-block" type="submit" value="Start Scanning">
+            <input class="btn btn-primary btn-lg btn-block" {{ if .JobStarted }}disabled{{ end }} type="submit"
+                   value="Start Scanning">
         </form>
     </section>
+
     <br/>
 
     <div class="row">
@@ -23,16 +31,18 @@
                     <div class="card">
                         <img class="card-img-top" src="/preview?jobName={{$jobName}}&scan={{$scan}}" alt="{{$scan}}">
                         <div class="card-footer">
-                            <small class="text-muted">
-                                <a href="/scan?jobName={{$jobName}}&scan={{$scan}}">Download</a>
-                            </small>
+                            <div class="btn-group" role="group" aria-label="Basic example">
+                                <button type="button" class="btn btn-secondary"
+                                        onclick="window.location.href='/download?jobName={{$jobName}}&scan={{$scan}}'">Download</button>
+                                <button type="button" class="btn btn-secondary"
+                                        onclick="deleteScan({{$jobName}},{{$scan}});">Delete</button>
+                            </div>
                         </div>
                     </div>
                 {{- end}}
             {{- end}}
         </div>
     </div>
-
     {{ if .JobStarted }}
         <div id="toast" class="toast" style="position: absolute; top: 0; right: 0;" role="alert" aria-live="assertive"
              aria-atomic="true">
@@ -45,10 +55,30 @@
         </div>
     {{ end }}
 
+    <!-- Modal -->
+    <div class="modal fade" id="deleteScanModal" tabindex="-1" role="dialog" aria-labelledby="deleteScanModalTitle"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteScanModalTitle">Delete scan?</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                    <form action="/deleteScan" method="post">
+                        <input type="hidden" name="jobName" id="modalJobName"/>
+                        <input type="hidden" name="scan" id="modalScan"/>
+                        <button type="submit" class="btn btn-primary">Yes</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-
 {{ template "javascript" }}
-
 <script>
     $(document).ready(function () {
         {{ if .JobStarted }}
@@ -60,6 +90,12 @@
         $("#toast").toast('show');
         {{ end }}
     });
+    function deleteScan(jobName, scan){
+        $('#modalJobName').val(jobName);
+        $('#modalScan').val(scan);
+        $('#deleteScanModal').modal()
+    }
+    console.log("init")
 </script>
 </body>
 </html>

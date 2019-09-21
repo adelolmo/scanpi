@@ -30,13 +30,14 @@ type pageJobs struct {
 	Navigation   string
 	JobName      string
 	PreviousJobs []string
+	Scans        []string
+	JobStarted   bool
 }
 
 type pageScanner struct {
 	Navigation string
 	JobName    string
 	Scans      []string
-	JobStarted bool
 }
 
 var indexTemplate *template.Template
@@ -120,7 +121,8 @@ func main() {
 	router.HandleFunc("/job", resumeJobPage).Methods("GET")
 	router.HandleFunc("/job", createJobHandler).Methods("POST")
 	router.HandleFunc("/scan", scanHandler).Methods("POST")
-	router.HandleFunc("/scan", getFileHandler).Methods("GET")
+	router.HandleFunc("/deleteScan", deleteScanHandler).Methods("POST")
+	router.HandleFunc("/download", downloadFileHandler).Methods("GET")
 	router.HandleFunc("/preview", previewHandler).Methods("GET")
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), router))
 }
@@ -181,7 +183,7 @@ func showJobsPage(w http.ResponseWriter, r *http.Request) {
 	}
 	err := jobsTemplate.Execute(w, index)
 	if err != nil {
-		panic(err)
+		log.Fatalln(err)
 	}
 }
 
@@ -196,13 +198,12 @@ func resumeJobPage(w http.ResponseWriter, r *http.Request) {
 	directory := fs.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
 	for _, file := range directory {
 		scans = append(scans, file.Name())
-		println(file.Name())
 	}
 
-	scanner := &pageScanner{
+	scanner := &pageJobs{
 		Navigation: "jobs",
-		Scans:      scans,
 		JobName:    jobName,
+		Scans:      scans,
 	}
 	if err := jobTemplate.Execute(w, scanner); err != nil {
 		log.Fatalln(err)
@@ -244,6 +245,7 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		scanName = fmt.Sprintf("%d.%s", lastScanNumber+1, fileExtension)
 	}
+
 	settings := readSettings()
 	resolution, _ := strconv.Atoi(settings.Resolution)
 	scanJob := scanimage.NewScanJob(
@@ -257,10 +259,10 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		scans = append(scans, file.Name())
 	}
 
-	scanner := &pageScanner{
+	scanner := &pageJobs{
 		Navigation: "jobs",
-		Scans:      scans,
 		JobName:    jobName,
+		Scans:      scans,
 		JobStarted: true,
 	}
 	if err := jobTemplate.Execute(w, scanner); err != nil {
@@ -268,7 +270,33 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getFileHandler(w http.ResponseWriter, r *http.Request) {
+func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
+	jobName := r.FormValue("jobName")
+	scan := r.FormValue("scan")
+	imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
+	fmt.Printf("delete image %s\n", imagePath)
+
+	if err := os.Remove(imagePath); err != nil {
+		log.Println(fmt.Sprintf("unable to delete image file %s.", imagePath), err)
+	}
+
+	var scans []string
+	directory := fs.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
+	for _, file := range directory {
+		scans = append(scans, file.Name())
+	}
+
+	scanner := &pageJobs{
+		Navigation: "jobs",
+		JobName:    jobName,
+		Scans:      scans,
+	}
+	if err := jobTemplate.Execute(w, scanner); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
 	scan := r.FormValue("scan")
 
