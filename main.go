@@ -234,14 +234,15 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
 	previousScans := fs.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
 
-	scanName := "1.tiff"
+	fileExtension := readSettings().Format
+	scanName := fmt.Sprintf("1.%s", fileExtension)
 	if len(previousScans) > 0 {
 		lastScanName := previousScans[len(previousScans)-1].Name()
 		lastScanNumber, err := strconv.Atoi(strings.Split(lastScanName, ".")[0])
 		if err != nil {
 			println(err)
 		}
-		scanName = fmt.Sprintf("%d.tiff", lastScanNumber+1)
+		scanName = fmt.Sprintf("%d.%s", lastScanNumber+1, fileExtension)
 	}
 	settings := readSettings()
 	resolution, _ := strconv.Atoi(settings.Resolution)
@@ -250,9 +251,6 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		scanimage.ToFormat(settings.Format),
 		resolution)
 	scanJob.Start(path.Join(appConfiguration.OutputDirectory, jobName, scanName))
-	/*if err != nil {
-		log.Println("Unable to start scanning", err)
-	}*/
 
 	var scans []string
 	for _, file := range previousScans {
@@ -274,15 +272,17 @@ func getFileHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
 	scan := r.FormValue("scan")
 
-	file, err := ioutil.ReadFile(path.Join(appConfiguration.OutputDirectory, jobName, scan))
+	imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
+	file, err := ioutil.ReadFile(imagePath)
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(fmt.Sprintf("unable to read image file %s.", imagePath), err)
 	}
 
-	w.Header().Set("Content-Type", "image/tiff")
+	contentType := fmt.Sprintf("image/%s", path.Ext(imagePath)[1:])
+	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Length", strconv.Itoa(len(file)))
 	if _, err := w.Write(file); err != nil {
-		log.Println("unable to write image.", err)
+		log.Println(fmt.Sprintf("unable to stream image %s.", imagePath), err)
 	}
 }
 
@@ -290,9 +290,10 @@ func previewHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
 	scan := r.FormValue("scan")
 
-	buffer, err := thumbnail.Preview(path.Join(appConfiguration.OutputDirectory, jobName, scan))
+	imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
+	buffer, err := thumbnail.Preview(imagePath)
 	if err != nil {
-		fmt.Print(err)
+		log.Println(fmt.Sprintf("unable to get thumbnail %s.", imagePath), err)
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
