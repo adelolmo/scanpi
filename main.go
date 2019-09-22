@@ -38,6 +38,7 @@ type pageScanner struct {
 	Navigation string
 	JobName    string
 	Scans      []string
+	JobStarted bool
 }
 
 var indexTemplate *template.Template
@@ -120,6 +121,7 @@ func main() {
 	router.HandleFunc("/jobs", showJobsPage).Methods("GET")
 	router.HandleFunc("/job", resumeJobPage).Methods("GET")
 	router.HandleFunc("/job", createJobHandler).Methods("POST")
+	router.HandleFunc("/deleteJob", deleteJobHandler).Methods("POST")
 	router.HandleFunc("/scan", scanHandler).Methods("POST")
 	router.HandleFunc("/deleteScan", deleteScanHandler).Methods("POST")
 	router.HandleFunc("/download", downloadFileHandler).Methods("GET")
@@ -227,6 +229,29 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 		JobName:    jobName,
 	}
 	if err := jobTemplate.Execute(w, scanner); err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func deleteJobHandler(w http.ResponseWriter, r *http.Request) {
+	jobName := r.FormValue("jobName")
+
+	jobPath := path.Join(appConfiguration.OutputDirectory, jobName)
+	if err := os.RemoveAll(jobPath); err != nil {
+		log.Println(fmt.Sprintf("unable to delete job directory %s.", jobPath), err)
+	}
+
+	var previousJobs []string
+	for _, dir := range fs.JobDirectories(appConfiguration.OutputDirectory) {
+		previousJobs = append(previousJobs, dir.Name())
+	}
+
+	index := &pageJobs{
+		Navigation:   "jobs",
+		PreviousJobs: previousJobs,
+	}
+	err := jobsTemplate.Execute(w, index)
+	if err != nil {
 		log.Fatalln(err)
 	}
 }

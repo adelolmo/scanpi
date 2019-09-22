@@ -16,8 +16,17 @@
     <section>
         <form id="print" action="/scan" method="post">
             <input type="hidden" name="jobName" value="{{.JobName}}"/>
-            <input class="btn btn-primary btn-lg btn-block" {{ if .JobStarted }}disabled{{ end }} type="submit"
-                   value="Start Scanning">
+            <div class="row">
+                <div class="col-sm-10">
+                    <input class="btn btn-primary btn-lg btn-block" {{ if .JobStarted }}disabled{{ end }} type="submit"
+                           value="Start Scanning">
+                </div>
+                <div class="col-sm-2">
+                    <button type="button" class="btn btn-danger btn-lg btn-block"
+                            onclick="deleteJob({{.JobName}});">Delete Job
+                    </button>
+                </div>
+            </div>
         </form>
     </section>
 
@@ -29,18 +38,20 @@
             {{range $scan := .Scans }}
                 <div class="col-sm-6">
                     <div class="card">
-                        <img class="card-img-top" src="/preview?jobName={{$jobName}}&scan={{$scan}}" alt="{{$scan}}">
+                        <div class="card-body">
+                            <h5 class="card-title">{{$scan}}</h5>
+                            <img class="card-img-top" src="/preview?jobName={{$jobName}}&scan={{$scan}}"
+                                 alt="{{$scan}}">
+                        </div>
                         <div class="card-footer">
-                            <div class="btn-group mr-2" role="group" aria-label="First group">
-                                <div class="btn-group mr-2" role="group" aria-label="Actions">
+                            <div class="row">
+                                <div class="col-sm-6">
                                     <button type="button" class="btn btn-primary btn-lg btn-block"
                                             onclick="window.location.href='/download?jobName={{$jobName}}&scan={{$scan}}'">
                                         Download
                                     </button>
                                 </div>
-                            </div>
-                            <div class="btn-group mr-2" role="group" aria-label="First group">
-                                <div class="btn-group mr-2" role="group" aria-label="Actions">
+                                <div class="col-sm-6">
                                     <button type="button" class="btn btn-danger btn-lg btn-block"
                                             onclick="deleteScan({{$jobName}},{{$scan}});">Delete
                                     </button>
@@ -64,7 +75,30 @@
         </div>
     {{ end }}
 
-    <!-- Modal -->
+
+    <!-- delete job modal -->
+    <div class="modal fade" id="deleteJobModal" tabindex="-1" role="dialog" aria-labelledby="deleteJobModalTitle"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteJobModalTitle">Delete Job?</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">No</button>
+                    <form action="/deleteJob" method="post">
+                        <input type="hidden" name="jobName" id="jobModalJobName"/>
+                        <button type="submit" class="btn btn-danger">Yes</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- delete scan modal -->
     <div class="modal fade" id="deleteScanModal" tabindex="-1" role="dialog" aria-labelledby="deleteScanModalTitle"
          aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
@@ -78,8 +112,8 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" data-dismiss="modal">No</button>
                     <form action="/deleteScan" method="post">
-                        <input type="hidden" name="jobName" id="modalJobName"/>
-                        <input type="hidden" name="scan" id="modalScan"/>
+                        <input type="hidden" name="jobName" id="scanModalJobName"/>
+                        <input type="hidden" name="scan" id="scanModalScan"/>
                         <button type="submit" class="btn btn-danger">Yes</button>
                     </form>
                 </div>
@@ -100,12 +134,16 @@
         {{ end }}
     });
 
-    function deleteScan(jobName, scan) {
-        $('#modalJobName').val(jobName);
-        $('#modalScan').val(scan);
-        $('#deleteScanModal').modal()
+    function deleteJob(jobName) {
+        $('#jobModalJobName').val(jobName);
+        $('#deleteJobModal').modal()
     }
 
+    function deleteScan(jobName, scan) {
+        $('#scanModalJobName').val(jobName);
+        $('#scanModalScan').val(scan);
+        $('#deleteScanModal').modal()
+    }
     console.log("init")
 </script>
 </body>
