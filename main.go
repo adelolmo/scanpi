@@ -279,6 +279,9 @@ func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
 	if err := os.Remove(imagePath); err != nil {
 		log.Println(fmt.Sprintf("unable to delete image file %s.", imagePath), err)
 	}
+	if err := thumbnail.DeletePreview(imagePath); err != nil {
+		log.Println(err.Error())
+	}
 
 	var scans []string
 	directory := fs.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
@@ -309,6 +312,8 @@ func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	contentType := fmt.Sprintf("image/%s", path.Ext(imagePath)[1:])
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Length", strconv.Itoa(len(file)))
+	w.Header().Set("content-disposition",
+		fmt.Sprintf("attachment; filename=\"%s-%s\"", jobName, scan))
 	if _, err := w.Write(file); err != nil {
 		log.Println(fmt.Sprintf("unable to stream image %s.", imagePath), err)
 	}
@@ -318,15 +323,24 @@ func previewHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
 	scan := r.FormValue("scan")
 
+	w.Header().Set("Content-Type", "image/jpeg")
+
 	imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
 	buffer, err := thumbnail.Preview(imagePath)
 	if err != nil {
-		log.Println(fmt.Sprintf("unable to get thumbnail %s.", imagePath), err)
-		w.WriteHeader(http.StatusNotFound)
+		log.Println(fmt.Sprintf("unable to get thumbnail %s. Error: %s", imagePath, err.Error()))
+		box := packr.NewBox("./assets")
+		b, err := box.Find("not_available.jpeg")
+		if err != nil {
+			log.Fatalln("Cannot read asset not_available.jpeg")
+		}
+		if _, err := w.Write(b); err != nil {
+			log.Println(fmt.Sprintf("unable to stream image %s.", imagePath), err)
+		}
+		w.Header().Set("Content-Length", strconv.Itoa(len(b)))
 		return
 	}
 
-	w.Header().Set("Content-Type", "image/jpeg")
 	w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
 	if _, err := w.Write(buffer.Bytes()); err != nil {
 		fmt.Printf("failed to served preview: %v\n", err)

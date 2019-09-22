@@ -17,39 +17,10 @@ import (
 func Preview(originalImage string) (*bytes.Buffer, error) {
 	previewPath := originalImage + ".thumbnail"
 	if _, err := os.Stat(previewPath); os.IsNotExist(err) {
-		fmt.Println(fmt.Sprintf("Generating preview for %s. Start", originalImage))
-
-		fmt.Println("read file")
-		file, err := ioutil.ReadFile(originalImage)
+		buffer, err := GenerateThumbnail(originalImage)
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf("Cannot read image on %s. Error: %s\n", originalImage, err))
+			return buffer, err
 		}
-		fmt.Println("done")
-
-		fmt.Println("decode image")
-		srcImage, err := decodeImage(file, originalImage)
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("Cannot decode image on %s. Error: %s\n", originalImage, err))
-		}
-		fmt.Println("done")
-
-		fmt.Println("resize image")
-		dst := imaging.Resize(srcImage, 0, 500, imaging.Lanczos)
-		fmt.Println("done")
-
-		fmt.Println("save image")
-		err = imaging.Save(dst, previewPath+".jpeg")
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("Cannot save preview on %s. Error: %s\n", previewPath+".jpeg", err))
-		}
-		fmt.Println("done")
-
-		fmt.Println("rename")
-		if err = os.Rename(previewPath+".jpeg", previewPath); err != nil {
-			return nil, errors.New(fmt.Sprintf("Cannot rename thumbnail on %s. Error: %s\n", previewPath+".jpeg", err))
-		}
-		fmt.Println("done")
-		fmt.Println(fmt.Sprintf("Generating preview for %s. End", originalImage))
 	}
 
 	preview, err := imaging.Open(previewPath)
@@ -63,6 +34,55 @@ func Preview(originalImage string) (*bytes.Buffer, error) {
 
 	}
 	return buf, nil
+}
+
+func GenerateThumbnail(originalImage string) (*bytes.Buffer, error) {
+	previewPath := originalImage + ".thumbnail"
+
+	fmt.Println(fmt.Sprintf("Generating preview for %s. Start", originalImage))
+	fmt.Println("create empty thumbnail")
+	_, err := os.Create(previewPath)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Cannot create empty thumbnail for %s. Error: %v\n", originalImage, err))
+	}
+	fmt.Println("done")
+	fmt.Println("read file")
+	file, err := ioutil.ReadFile(originalImage)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Cannot read image on %s. Error: %s\n", originalImage, err))
+	}
+	fmt.Println("done")
+	fmt.Println("decode image")
+	srcImage, err := decodeImage(file, originalImage)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Cannot decode image on %s. Error: %s\n", originalImage, err))
+	}
+	fmt.Println("done")
+	fmt.Println("resize image")
+	dst := imaging.Resize(srcImage, 0, 300, imaging.Box)
+	fmt.Println("done")
+	fmt.Println("save image")
+	err = imaging.Save(dst, previewPath+".jpeg")
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Cannot save preview on %s. Error: %s\n", previewPath+".jpeg", err))
+	}
+	fmt.Println("done")
+	fmt.Println("rename")
+	if err = os.Rename(previewPath+".jpeg", previewPath); err != nil {
+		return nil, errors.New(fmt.Sprintf("Cannot rename thumbnail on %s. Error: %s\n", previewPath+".jpeg", err))
+	}
+	fmt.Println("done")
+	fmt.Println(fmt.Sprintf("Generating preview for %s. End", originalImage))
+	return nil, nil
+}
+
+func DeletePreview(originalImage string) error {
+	previewPath := originalImage + ".thumbnail"
+
+	if err := os.Remove(previewPath); err != nil {
+		return errors.New(fmt.Sprintf("unable to delete image file %s. Error: %v", previewPath, err))
+	}
+	return nil
 }
 
 func decodeImage(file []byte, originalImage string) (image.Image, error) {

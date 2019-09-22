@@ -24,24 +24,33 @@
     <br/>
 
     <div class="row">
-        <div class="col-sm-6">
-            {{if .Scans -}}
-                {{ $jobName := .JobName }}
-                {{range $scan := .Scans }}
+        {{if .Scans -}}
+            {{ $jobName := .JobName }}
+            {{range $scan := .Scans }}
+                <div class="col-sm-6">
                     <div class="card">
                         <img class="card-img-top" src="/preview?jobName={{$jobName}}&scan={{$scan}}" alt="{{$scan}}">
                         <div class="card-footer">
-                            <div class="btn-group" role="group" aria-label="Basic example">
-                                <button type="button" class="btn btn-secondary"
-                                        onclick="window.location.href='/download?jobName={{$jobName}}&scan={{$scan}}'">Download</button>
-                                <button type="button" class="btn btn-secondary"
-                                        onclick="deleteScan({{$jobName}},{{$scan}});">Delete</button>
+                            <div class="btn-group mr-2" role="group" aria-label="First group">
+                                <div class="btn-group mr-2" role="group" aria-label="Actions">
+                                    <button type="button" class="btn btn-primary btn-lg btn-block"
+                                            onclick="window.location.href='/download?jobName={{$jobName}}&scan={{$scan}}'">
+                                        Download
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="btn-group mr-2" role="group" aria-label="First group">
+                                <div class="btn-group mr-2" role="group" aria-label="Actions">
+                                    <button type="button" class="btn btn-danger btn-lg btn-block"
+                                            onclick="deleteScan({{$jobName}},{{$scan}});">Delete
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                {{- end}}
+                </div>
             {{- end}}
-        </div>
+        {{- end}}
     </div>
     {{ if .JobStarted }}
         <div id="toast" class="toast" style="position: absolute; top: 0; right: 0;" role="alert" aria-live="assertive"
@@ -67,11 +76,11 @@
                     </button>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">No</button>
                     <form action="/deleteScan" method="post">
                         <input type="hidden" name="jobName" id="modalJobName"/>
                         <input type="hidden" name="scan" id="modalScan"/>
-                        <button type="submit" class="btn btn-primary">Yes</button>
+                        <button type="submit" class="btn btn-danger">Yes</button>
                     </form>
                 </div>
             </div>
@@ -84,17 +93,19 @@
         {{ if .JobStarted }}
         $("#toast").toast({
                 animation: true,
-                delay: 5000
+                delay: 7000
             }
         );
         $("#toast").toast('show');
         {{ end }}
     });
-    function deleteScan(jobName, scan){
+
+    function deleteScan(jobName, scan) {
         $('#modalJobName').val(jobName);
         $('#modalScan').val(scan);
         $('#deleteScanModal').modal()
     }
+
     console.log("init")
 </script>
 </body>

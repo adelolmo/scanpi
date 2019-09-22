@@ -2,6 +2,7 @@ package scanimage
 
 import (
 	"fmt"
+	"github.com/adelolmo/sane-web-client/thumbnail"
 	"io/ioutil"
 	"os/exec"
 	"strings"
@@ -116,5 +117,10 @@ func (s *Scan) Start(path string) {
 			fmt.Println(fmt.Sprintf("Cannot write image file on %s. Error: %s\n", path, err))
 		}
 		fmt.Println("Scanning process. End")
+
+		_, err = thumbnail.GenerateThumbnail(path)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
 	}()
 }
