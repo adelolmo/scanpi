@@ -53,6 +53,14 @@
   version = "v1.3.0"
 
 [[projects]]
+  digest = "1:7e72e45ba4a931f3c6104b034c726bd1772bff61e51fb17006e82ed6ae84dc31"
+  name = "github.com/jung-kurt/gofpdf"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "07f2797b1523f4a406a919883c018ca52233a8a0"
+  version = "v1.12.1"
+
+[[projects]]
   digest = "1:e09ada96a5a41deda4748b1659cc8953961799e798aea557257b56baee4ecaf3"
   name = "github.com/rogpeppe/go-internal"
   packages = [
@@ -84,6 +92,7 @@
     "github.com/disintegration/imaging",
     "github.com/gobuffalo/packr",
     "github.com/gorilla/mux",
+    "github.com/jung-kurt/gofpdf",
     "golang.org/x/image/tiff",
   ]
   solver-name = "gps-cdcl"

@@ -334,14 +334,21 @@ func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(fmt.Sprintf("unable to read image file %s.", imagePath), err)
 	}
 
-	contentType := fmt.Sprintf("image/%s", path.Ext(imagePath)[1:])
-	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Type", contentType(imagePath))
 	w.Header().Set("Content-Length", strconv.Itoa(len(file)))
 	w.Header().Set("content-disposition",
 		fmt.Sprintf("attachment; filename=\"%s-%s\"", jobName, scan))
 	if _, err := w.Write(file); err != nil {
 		log.Println(fmt.Sprintf("unable to stream image %s.", imagePath), err)
 	}
+}
+
+func contentType(imagePath string) string {
+	imageType := path.Ext(imagePath)[1:]
+	if imageType == "pdf" {
+		return "application/pdf"
+	}
+	return fmt.Sprintf("image/%s", imageType)
 }
 
 func previewHandler(w http.ResponseWriter, r *http.Request) {
