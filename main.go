@@ -277,7 +277,7 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		scanimage.ToMode(settings.Mode),
 		scanimage.ToFormat(settings.Format),
 		resolution)
-	scanJob.Start(path.Join(appConfiguration.OutputDirectory, jobName, scanName))
+	scanJob.Start(appConfiguration.OutputDirectory, path.Join(jobName, scanName))
 
 	var scans []string
 	for _, file := range previousScans {
@@ -360,14 +360,18 @@ func previewHandler(w http.ResponseWriter, r *http.Request) {
 	imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
 	buffer, err := thumbnail.Preview(imagePath)
 	if err != nil {
-		log.Println(fmt.Sprintf("unable to get thumbnail %s. Error: %s", imagePath, err.Error()))
+		fmt.Println(fmt.Sprintf("unable to get thumbnail %s. Error: %s", imagePath, err.Error()))
 		box := packr.NewBox("./assets")
 		b, err := box.Find("not_available.jpeg")
 		if err != nil {
-			log.Fatalln("Cannot read asset not_available.jpeg")
+			fmt.Println("Cannot read asset not_available.jpeg")
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 		if _, err := w.Write(b); err != nil {
-			log.Println(fmt.Sprintf("unable to stream image %s.", imagePath), err)
+			fmt.Println(fmt.Sprintf("unable to stream image %s.", imagePath), err)
+			w.WriteHeader(http.StatusNotFound)
+			return
 		}
 		w.Header().Set("Content-Length", strconv.Itoa(len(b)))
 		return

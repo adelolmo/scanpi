@@ -22,7 +22,7 @@ func ImageFilesOnDirectory(dir string) []os.FileInfo {
 			continue
 		}
 		ext := path.Ext(file.Name())
-		if ext != ".tiff" && ext != ".png" && ext != ".jpeg" && ext != ".pnm" {
+		if ext != ".tiff" && ext != ".png" && ext != ".jpeg" && ext != ".pnm" && ext != ".pdf" {
 			continue
 		}
 		files[i] = file

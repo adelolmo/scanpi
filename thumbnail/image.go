@@ -36,30 +36,30 @@ func Preview(originalImage string) (*bytes.Buffer, error) {
 	return buf, nil
 }
 
-func GenerateThumbnail(originalImage string) error {
-	previewPath := originalImage + ".thumbnail"
+func GenerateThumbnail(srcImagePath string, outImagePath string) error {
+	previewPath := outImagePath + ".thumbnail"
 
-	fmt.Println(fmt.Sprintf("Generating preview for %s. Start", originalImage))
+	fmt.Println(fmt.Sprintf("Generating preview from %s to %s. Start", srcImagePath, outImagePath))
 	fmt.Println("create empty thumbnail")
 	_, err := os.Create(previewPath)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Cannot create empty thumbnail for %s. Error: %v\n", originalImage, err))
+		return errors.New(fmt.Sprintf("Cannot create empty thumbnail for %s. Error: %v\n", srcImagePath, err))
 	}
 	fmt.Println("done")
 	fmt.Println("read file")
-	file, err := ioutil.ReadFile(originalImage)
+	file, err := ioutil.ReadFile(srcImagePath)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Cannot read image on %s. Error: %s\n", originalImage, err))
+		return errors.New(fmt.Sprintf("Cannot read image on %s. Error: %s\n", srcImagePath, err))
 	}
 	fmt.Println("done")
 	fmt.Println("decode image")
-	srcImage, err := decodeImage(file, originalImage)
+	srcImage, err := decodeImage(file, srcImagePath)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Cannot decode image on %s. Error: %s\n", originalImage, err))
+		return errors.New(fmt.Sprintf("Cannot decode image on %s. Error: %s\n", srcImagePath, err))
 	}
 	fmt.Println("done")
 	fmt.Println("resize image")
-	dst := imaging.Resize(srcImage, 0, 300, imaging.Box)
+	dst := imaging.Resize(srcImage, 0, 250, imaging.Box)
 	fmt.Println("done")
 	fmt.Println("save image")
 	err = imaging.Save(dst, previewPath+".jpeg")
@@ -72,7 +72,7 @@ func GenerateThumbnail(originalImage string) error {
 		return errors.New(fmt.Sprintf("Cannot rename thumbnail on %s. Error: %s\n", previewPath+".jpeg", err))
 	}
 	fmt.Println("done")
-	fmt.Println(fmt.Sprintf("Generating preview for %s. End", originalImage))
+	fmt.Println(fmt.Sprintf("Generating preview for %s. End", srcImagePath))
 	return nil
 }
 
