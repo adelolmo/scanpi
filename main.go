@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/adelolmo/sane-web-client/debug"
 	"github.com/adelolmo/sane-web-client/fs"
 	"github.com/adelolmo/sane-web-client/scanimage"
 	"github.com/adelolmo/sane-web-client/thumbnail"
@@ -41,15 +42,15 @@ type pageScanner struct {
 	JobStarted bool
 }
 
-var indexTemplate *template.Template
-var jobTemplate *template.Template
-var jobsTemplate *template.Template
-var settingsTemplate *template.Template
-
 type configuration struct {
 	OutputDirectory string
 	WorkDirectory   string
 }
+
+var indexTemplate *template.Template
+var jobTemplate *template.Template
+var jobsTemplate *template.Template
+var settingsTemplate *template.Template
 
 var appConfiguration configuration
 
@@ -96,14 +97,15 @@ func main() {
 		OutputDirectory: outputDirectory,
 		WorkDirectory:   workDirectory,
 	}
-	fmt.Println(fmt.Sprintf("port: %s, outputDir: %s, workDir: %s", port, outputDirectory, workDirectory))
+	fmt.Println(fmt.Sprintf("port: %s, outputDir: %s, workDir: %s, debug: %v",
+		port, outputDirectory, workDirectory, debug.Enabled()))
 
 	settingsFile := path.Join(appConfiguration.WorkDirectory, "settings.json")
 	if _, err := os.Stat(settingsFile); os.IsNotExist(err) {
 		settings := &settings{
 			Mode:       scanimage.Color.String(),
-			Format:     scanimage.Tiff.String(),
-			Resolution: "300",
+			Format:     scanimage.Jpeg.String(),
+			Resolution: "200",
 		}
 		settingsJson, _ := json.Marshal(settings)
 		if err := ioutil.WriteFile(path.Join(appConfiguration.WorkDirectory, "settings.json"), settingsJson, 0644); err != nil {
@@ -138,17 +140,15 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 	type index struct {
 		Navigation string
 	}
-	err := indexTemplate.Execute(w, &index{Navigation: "home"})
-	if err != nil {
-		fmt.Println(fmt.Sprintf("Cannot execute index template. Error: %s", err.Error()))
+	if err := indexTemplate.Execute(w, &index{Navigation: "home"}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func showSettingsPage(w http.ResponseWriter, r *http.Request) {
 	settings := readSettings()
-	err := settingsTemplate.Execute(w, settings)
-	if err != nil {
-		panic(err)
+	if err := settingsTemplate.Execute(w, settings); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -165,11 +165,11 @@ func updateSettingsPage(w http.ResponseWriter, r *http.Request) {
 	}
 	settingsJson, _ := json.Marshal(settings)
 	if err := ioutil.WriteFile(path.Join(appConfiguration.WorkDirectory, "settings.json"), settingsJson, 0644); err != nil {
-		log.Fatalln(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	if err := settingsTemplate.Execute(w, settings); err != nil {
-		log.Fatalln(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -185,16 +185,12 @@ func showJobsPage(w http.ResponseWriter, r *http.Request) {
 	}
 	err := jobsTemplate.Execute(w, index)
 	if err != nil {
-		log.Fatalln(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func resumeJobPage(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
-
-	if err := os.MkdirAll(path.Join(appConfiguration.OutputDirectory, jobName), os.ModePerm); err != nil {
-		log.Fatalln(err)
-	}
 
 	var scans []string
 	directory := fs.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
@@ -208,14 +204,14 @@ func resumeJobPage(w http.ResponseWriter, r *http.Request) {
 		Scans:      scans,
 	}
 	if err := jobTemplate.Execute(w, scanner); err != nil {
-		log.Fatalln(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func createJobHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
 	if err := os.MkdirAll(path.Join(appConfiguration.OutputDirectory, jobName), os.ModePerm); err != nil {
-		log.Fatalln(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	var scans []string
@@ -229,7 +225,7 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 		JobName:    jobName,
 	}
 	if err := jobTemplate.Execute(w, scanner); err != nil {
-		log.Fatalln(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -252,7 +248,7 @@ func deleteJobHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	err := jobsTemplate.Execute(w, index)
 	if err != nil {
-		log.Fatalln(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
@@ -266,7 +262,7 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		lastScanName := previousScans[0].Name()
 		lastScanNumber, err := strconv.Atoi(strings.Split(lastScanName, ".")[0])
 		if err != nil {
-			println(err)
+			fmt.Println(err)
 		}
 		scanName = fmt.Sprintf("%d.%s", lastScanNumber+1, fileExtension)
 	}
@@ -291,21 +287,21 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		JobStarted: true,
 	}
 	if err := jobTemplate.Execute(w, scanner); err != nil {
-		log.Fatalln(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
-
 func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
 	scan := r.FormValue("scan")
 	imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
-	fmt.Printf("delete image %s\n", imagePath)
+
+	debug.Info(fmt.Sprintf("delete image %s\n", imagePath))
 
 	if err := os.Remove(imagePath); err != nil {
-		log.Println(fmt.Sprintf("unable to delete image file %s.", imagePath), err)
+		fmt.Println(fmt.Sprintf("unable to delete image file %s.", imagePath), err)
 	}
 	if err := thumbnail.DeletePreview(imagePath); err != nil {
-		log.Println(err.Error())
+		fmt.Println(err.Error())
 	}
 
 	var scans []string
@@ -320,10 +316,9 @@ func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
 		Scans:      scans,
 	}
 	if err := jobTemplate.Execute(w, scanner); err != nil {
-		log.Fatalln(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
-
 func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
 	scan := r.FormValue("scan")
@@ -331,7 +326,7 @@ func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
 	file, err := ioutil.ReadFile(imagePath)
 	if err != nil {
-		log.Println(fmt.Sprintf("unable to read image file %s.", imagePath), err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	w.Header().Set("Content-Type", contentType(imagePath))
@@ -339,16 +334,8 @@ func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-disposition",
 		fmt.Sprintf("attachment; filename=\"%s-%s\"", jobName, scan))
 	if _, err := w.Write(file); err != nil {
-		log.Println(fmt.Sprintf("unable to stream image %s.", imagePath), err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-}
-
-func contentType(imagePath string) string {
-	imageType := path.Ext(imagePath)[1:]
-	if imageType == "pdf" {
-		return "application/pdf"
-	}
-	return fmt.Sprintf("image/%s", imageType)
 }
 
 func previewHandler(w http.ResponseWriter, r *http.Request) {
@@ -364,13 +351,11 @@ func previewHandler(w http.ResponseWriter, r *http.Request) {
 		box := packr.NewBox("./assets")
 		b, err := box.Find("not_available.jpeg")
 		if err != nil {
-			fmt.Println("Cannot read asset not_available.jpeg")
-			w.WriteHeader(http.StatusNotFound)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		if _, err := w.Write(b); err != nil {
-			fmt.Println(fmt.Sprintf("unable to stream image %s.", imagePath), err)
-			w.WriteHeader(http.StatusNotFound)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Length", strconv.Itoa(len(b)))
@@ -379,8 +364,7 @@ func previewHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
 	if _, err := w.Write(buffer.Bytes()); err != nil {
-		fmt.Printf("failed to served preview: %v\n", err)
-		w.WriteHeader(http.StatusNotFound)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
@@ -389,13 +373,21 @@ func readSettings() *settings {
 	settingsFile := path.Join(appConfiguration.WorkDirectory, "settings.json")
 	file, err := ioutil.ReadFile(settingsFile)
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
 	}
 	settings := &settings{
 		Navigation: "settings",
 	}
 	if err = json.Unmarshal(file, settings); err != nil {
-		log.Fatalln(err)
+		fmt.Println(err)
 	}
 	return settings
+}
+
+func contentType(imagePath string) string {
+	imageType := path.Ext(imagePath)[1:]
+	if imageType == "pdf" {
+		return "application/pdf"
+	}
+	return fmt.Sprintf("image/%s", imageType)
 }

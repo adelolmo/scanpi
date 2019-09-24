@@ -2,6 +2,7 @@ package scanimage
 
 import (
 	"fmt"
+	"github.com/adelolmo/sane-web-client/debug"
 	"github.com/adelolmo/sane-web-client/thumbnail"
 	"github.com/jung-kurt/gofpdf"
 	"io/ioutil"
@@ -113,15 +114,15 @@ func NewScanJob(mode Mode, format Format, resolution int) *Scan {
 
 func (s *Scan) Start(baseDir string, imageFilename string) {
 	go func() {
-		fmt.Println(fmt.Sprintf("Scanning process for %s. Start", imageFilename))
+		debug.Info(fmt.Sprintf("Scanning process for %s. Start", imageFilename))
 
 		format := s.Format
 		outImageFilename := imageFilename
 		if s.Format == Pdf {
-			fmt.Println("Output format is pdf. Generate jpeg first.")
+			debug.Info("Output format is pdf. Generate jpeg first.")
 			format = Jpeg
 			outImageFilename = path.Join(baseDir, "temp.jpeg")
-			fmt.Println(fmt.Sprintf("new imageFilename: %s.", outImageFilename))
+			debug.Info(fmt.Sprintf("new imageFilename: %s.", outImageFilename))
 		}
 
 		// su -s /bin/sh - saned
@@ -129,48 +130,47 @@ func (s *Scan) Start(baseDir string, imageFilename string) {
 			fmt.Sprintf("--mode=%s", s.Mode.String()),
 			fmt.Sprintf("--resolution=%d", s.Resolution),
 			fmt.Sprintf("--format=%s", format.String()))
-		fmt.Println(command.Args)
+		debug.Info(strings.Join(command.Args, " "))
 		out, err := command.Output()
 		if err != nil {
-			fmt.Println(fmt.Sprintf("Error executing scanimage command. Output: %s\n", out), err)
+			debug.Error(fmt.Sprintf("Error executing scanimage command. Output: %s. Error:%v", out, err))
 			return
 		}
 
 		err = ioutil.WriteFile(outImageFilename, out, 0644)
 		if err != nil {
-			fmt.Println(fmt.Sprintf("Cannot write image file on %s. Error: %s\n", imageFilename, err))
+			debug.Error(fmt.Sprintf("Cannot write image file on %s. Error: %s", imageFilename, err))
 		}
 
 		if s.Format == Pdf {
 			generatePdfFromJpeg(outImageFilename, path.Join(baseDir, imageFilename))
-			fmt.Println(fmt.Sprintf("Scanning process for %s. End", imageFilename))
+			debug.Info(fmt.Sprintf("Scanning process for %s. End", imageFilename))
 
 			if err = thumbnail.GenerateThumbnail(outImageFilename, path.Join(baseDir, imageFilename)); err != nil {
-				fmt.Println(err.Error())
+				debug.Error(err.Error())
 			}
 			if err := os.Remove(outImageFilename); err != nil {
-				fmt.Println(fmt.Sprintf("Cannot remove original image file on %s. Error: %s\n", outImageFilename, err.Error()))
+				debug.Error(fmt.Sprintf("Cannot remove original image file on %s. Error: %s", outImageFilename, err.Error()))
 			}
 			return
 		}
-		fmt.Println(fmt.Sprintf("Scanning process for %s. End", imageFilename))
+		debug.Info(fmt.Sprintf("Scanning process for %s. End", imageFilename))
 
 		if err = thumbnail.GenerateThumbnail(outImageFilename, path.Join(baseDir, imageFilename)); err != nil {
-			fmt.Println(err.Error())
+			debug.Error(err.Error())
 		}
-
 	}()
 }
 
 func generatePdfFromJpeg(srcImagePath string, outPdfPath string) {
-	fmt.Println(fmt.Sprintf("Pdf generation from image %s to pdf%s. Start", srcImagePath, outPdfPath))
+	debug.Info(fmt.Sprintf("Pdf generation from image %s to pdf%s. Start", srcImagePath, outPdfPath))
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 	options := gofpdf.ImageOptions{ImageType: Jpeg.String(), ReadDpi: true, AllowNegativePosition: false}
 	pdf.ImageOptions(srcImagePath, 0, 0, 210, 300, false, options, 0, "")
 	if err := pdf.OutputFileAndClose(outPdfPath); err != nil {
-		fmt.Println(fmt.Sprintf("Cannot write pdf file on %s. Error: %s\n", outPdfPath, err.Error()))
+		debug.Error(fmt.Sprintf("Cannot write pdf file on %s. Error: %s", outPdfPath, err.Error()))
 	}
-	fmt.Println(fmt.Sprintf("Pdf generation for %s. End", srcImagePath))
+	debug.Info(fmt.Sprintf("Pdf generation for %s. End", srcImagePath))
 }
