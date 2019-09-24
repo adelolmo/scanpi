@@ -128,6 +128,9 @@ func main() {
 	router.HandleFunc("/deleteScan", deleteScanHandler).Methods("POST")
 	router.HandleFunc("/download", downloadFileHandler).Methods("GET")
 	router.HandleFunc("/preview", previewHandler).Methods("GET")
+
+	router.HandleFunc("/scanner", scannerHandler).Methods("GET")
+
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), router))
 }
 
@@ -364,6 +367,23 @@ func previewHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
 	if _, err := w.Write(buffer.Bytes()); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func scannerHandler(w http.ResponseWriter, r *http.Request) {
+	type scanner struct {
+		Name   string `json:"name"`
+		Status string `json:"status"`
+	}
+
+	deviceName := scanimage.Device()
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(scanner{
+		Name:   deviceName,
+		Status: "Available",
+	}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

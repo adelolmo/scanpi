@@ -117,7 +117,7 @@ func (s *Scan) Start(baseDir string, imageFilename string) {
 		debug.Info(fmt.Sprintf("Scanning process for %s. Start", imageFilename))
 
 		format := s.Format
-		outImageFilename := imageFilename
+		outImageFilename := path.Join(baseDir, imageFilename)
 		if s.Format == Pdf {
 			debug.Info("Output format is pdf. Generate jpeg first.")
 			format = Jpeg
@@ -162,13 +162,26 @@ func (s *Scan) Start(baseDir string, imageFilename string) {
 	}()
 }
 
+func Device() string {
+	// scanimage -f "scanner number %i device %d is a %t, model %m, produced by %v"
+	// scanimage -f "%m"
+	command := exec.Command("/usr/bin/scanimage", "--formatted-device-list", "\"%m\"")
+	debug.Info(strings.Join(command.Args, " "))
+	out, err := command.Output()
+	if err != nil {
+		debug.Error(fmt.Sprintf("Error executing scanimage command. Output: %s. Error:%v", out, err))
+		return ""
+	}
+	return string(out)
+}
+
 func generatePdfFromJpeg(srcImagePath string, outPdfPath string) {
 	debug.Info(fmt.Sprintf("Pdf generation from image %s to pdf%s. Start", srcImagePath, outPdfPath))
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 	options := gofpdf.ImageOptions{ImageType: Jpeg.String(), ReadDpi: true, AllowNegativePosition: false}
-	pdf.ImageOptions(srcImagePath, 0, 0, 210, 300, false, options, 0, "")
+	pdf.ImageOptions(srcImagePath, 0, 0, 210, 295, false, options, 0, "")
 	if err := pdf.OutputFileAndClose(outPdfPath); err != nil {
 		debug.Error(fmt.Sprintf("Cannot write pdf file on %s. Error: %s", outPdfPath, err.Error()))
 	}

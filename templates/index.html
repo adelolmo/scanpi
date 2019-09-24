@@ -8,10 +8,34 @@
     <div class="jumbotron">
         <h1 class="display-4">Sane Web Client</h1>
         <hr class="my-4">
-        <p class="lead">Scanner: Epson</p>
-        <p class="lead">Status: Available</p>
+        <p class="lead">Scanner: <span id="scannerName">Unknown</span></p>
+        <p class="lead">Status: <span id="scannerStatus">Unknown</span></p>
     </div>
 </div>
 {{ template "javascript" }}
+
+<script type="application/javascript">
+    $(document).ready(function () {
+        console.log("document loaded.");
+        $('#scannerName').text("Loading...");
+        $('#scannerStatus').text("Loading...");
+
+        $.ajax({
+            type: "GET",
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            url: "/scanner",
+            error: function (xhr, status, error) {
+                console.log("error: " + error.message + " status: " + status + "\nxhr: " + xhr);
+            },
+            success: function (data, status, xhr) {
+                $('#scannerName').text(data.name);
+                $('#scannerStatus').text(data.status);
+            }
+        });
+    });
+</script>
 </body>
 </html>
