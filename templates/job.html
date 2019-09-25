@@ -8,7 +8,7 @@
     <h2>{{.JobName}}&nbsp;&nbsp;&nbsp;
         {{ if .JobStarted }}
             <button type="button" class="btn btn-outline-success"
-                    onClick="window.location.href='/job?jobName={{.JobName}}'">Refresh
+                    onClick="refreshPage({{.JobName}});">Refresh
             </button>
         {{end}}
     </h2>
@@ -47,7 +47,7 @@
                             <div class="row">
                                 <div class="col-sm-6">
                                     <button type="button" class="btn btn-primary btn-lg btn-block"
-                                            onclick="download({{$jobName}},{{$scan}})";>
+                                            onclick="download({{$jobName}},{{$scan}})" ;>
                                         Download
                                     </button>
                                 </div>
@@ -136,7 +136,12 @@
 
     function download(jobName, scan) {
         const encodedJobName = encodeURIComponent(jobName);
-        window.location.href='/download?jobName=' + encodedJobName + '&scan=' + scan
+        window.location.href = '/download?jobName=' + encodedJobName + '&scan=' + scan
+    }
+
+    function refreshPage(jobName) {
+        const encodedJobName = encodeURIComponent(jobName);
+        window.location.href = '/job?jobName=' + encodedJobName;
     }
 
     function deleteJob(jobName) {
@@ -149,7 +154,6 @@
         $('#scanModalScan').val(scan);
         $('#deleteScanModal').modal()
     }
-    console.log("init")
 </script>
 </body>
 </html>
