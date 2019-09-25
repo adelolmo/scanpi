@@ -33,15 +33,15 @@
 </div>
 {{ template "javascript" }}
 <script type="application/javascript">
-    // encodeURIComponent
     $(document).ready(function () {
         console.log("document loaded.");
-        $('a').each(function () {
-            console.log('before: ' + $(this).attr('href'));
-            var encoded = encodeURIComponent($(this).attr('href'));
-            $(this).attr('href', '/job?jobName='+encoded);
-            console.log('after: ' + $(this).attr('href'));
-        })
+        $('div.list-group').find('a')
+            .each(function () {
+                console.log('before: ' + $(this).attr('href'));
+                var encoded = encodeURIComponent($(this).attr('href'));
+                $(this).attr('href', '/job?jobName=' + encoded);
+                console.log('after: ' + $(this).attr('href'));
+            })
     });
 </script>
 </body>

@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strconv"
@@ -193,7 +194,11 @@ func showJobsPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func resumeJobPage(w http.ResponseWriter, r *http.Request) {
-	jobName := r.FormValue("jobName")
+	encodedJobName := r.FormValue("jobName")
+	jobName, err := url.QueryUnescape(encodedJobName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 
 	var scans []string
 	directory := fs.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))

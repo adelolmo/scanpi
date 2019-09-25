@@ -1,8 +1,9 @@
 package fs
 
 import (
+	"fmt"
+	"github.com/adelolmo/sane-web-client/debug"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"sort"
@@ -11,7 +12,8 @@ import (
 func ImageFilesOnDirectory(dir string) []os.FileInfo {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		log.Fatal(err)
+		debug.Error(fmt.Sprintf("unable to get images from directory '%s'", dir))
+		return []os.FileInfo{}
 	}
 	sort.Slice(files, func(i, j int) bool {
 		return files[i].Name() > files[j].Name()
