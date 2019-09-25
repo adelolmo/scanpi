@@ -328,10 +328,31 @@ func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
-	jobName := r.FormValue("jobName")
+	//queryStr := "name=Rajeev%20Singh&phone=%2B9199999999&phone=%2B628888888888"
+
+	params, err := url.ParseQuery(r.RequestURI)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	fmt.Println("Query Params: ")
+	for key, value := range params {
+		fmt.Printf("  %v = %v\n", key, value)
+	}
+
+	debug.Info("downloadFileHandler")
+	encodedJobName := r.FormValue("jobName")
+	jobName, err := url.QueryUnescape(encodedJobName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 	scan := r.FormValue("scan")
 
+	debug.Info(fmt.Sprintf("jobName: %s", jobName))
+	debug.Info(fmt.Sprintf("scan: %s", scan))
 	imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
+	debug.Info(fmt.Sprintf("imagePath: %s", imagePath))
 	file, err := ioutil.ReadFile(imagePath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

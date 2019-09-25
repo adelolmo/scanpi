@@ -12,7 +12,7 @@
                 <h3>Select job</h3>
                 <div class="list-group">
                     {{range $job := .PreviousJobs }}
-                        <a href="{{$job}}" class="list-group-item list-group-item-action">{{$job}}</a>
+                        <a href="/job?jobName={{$job}}" class="list-group-item list-group-item-action">{{$job}}</a>
                     {{- end}}
                 </div>
             {{ else }}
@@ -32,17 +32,5 @@
     </div>
 </div>
 {{ template "javascript" }}
-<script type="application/javascript">
-    $(document).ready(function () {
-        console.log("document loaded.");
-        $('div.list-group').find('a')
-            .each(function () {
-                console.log('before: ' + $(this).attr('href'));
-                var encoded = encodeURIComponent($(this).attr('href'));
-                $(this).attr('href', '/job?jobName=' + encoded);
-                console.log('after: ' + $(this).attr('href'));
-            })
-    });
-</script>
 </body>
 </html>
