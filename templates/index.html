@@ -8,8 +8,21 @@
     <div class="jumbotron">
         <h1 class="display-4">Sane Web Client</h1>
         <hr class="my-4">
-        <p class="lead">Scanner: <span id="scannerName">Unknown</span></p>
-        <p class="lead">Status: <span id="scannerStatus">Unknown</span></p>
+        <div class="form-group row">
+            <label for="scannerName">Device:</label>
+            <div class="col-sm-10">
+                <input class="form-control" type="text" id="scannerName" placeholder="Readonly input here..." readonly>
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="scannerStatus">Status:</label>
+            <div class="col-sm-10">
+                <input class="form-control" type="text" id="scannerStatus" placeholder="Readonly input here..."
+                       readonly>
+            </div>
+            {{/*        <p class="lead"><b>Scanner:</b> <span id="scannerName">Unknown</span></p>*/}}
+            {{/*        <p class="lead">Status: <span id="scannerStatus">Unknown</span></p>*/}}
+        </div>
     </div>
 </div>
 {{ template "javascript" }}
@@ -17,8 +30,8 @@
 <script type="application/javascript">
     $(document).ready(function () {
         console.log("document loaded.");
-        $('#scannerName').text("Loading...");
-        $('#scannerStatus').text("Loading...");
+        $('#scannerName').attr('placeholder', "Loading...");
+        $('#scannerStatus').attr('placeholder', "Loading...");
 
         $.ajax({
             type: "GET",
@@ -31,8 +44,8 @@
                 console.log("error: " + error.message + " status: " + status + "\nxhr: " + xhr);
             },
             success: function (data, status, xhr) {
-                $('#scannerName').text(data.name);
-                $('#scannerStatus').text(data.status);
+                $('#scannerName').attr('placeholder', data.name);
+                $('#scannerStatus').attr('placeholder', data.status);
             }
         });
     });

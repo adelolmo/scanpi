@@ -6,28 +6,43 @@
 {{ template "nav" . }}
 
 <div class="container">
-    <h3>Create new job</h3>
-    <form action="/job" method="post">
-        <div class="form-group">
-            <label for="jobName">Job name</label>
-            <input class="form-control" id="jobName" name="jobName" aria-describedby="jobHelp" placeholder="Job name">
-            <small id="jobHelp" class="form-text text-muted">Name to describe the scanning job.</small>
-        </div>
-        <button type="submit" class="btn btn-primary">Create</button>
-    </form>
-    <br/>
-    {{if .PreviousJobs -}}
-        <h3>Select job</h3>
-        <div class="list-group">
-            {{range $job := .PreviousJobs }}
-                <a href="/job?jobName={{$job}}" class="list-group-item list-group-item-action">{{$job}}</a>
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            {{if .PreviousJobs -}}
+                <h3>Select job</h3>
+                <div class="list-group">
+                    {{range $job := .PreviousJobs }}
+                        <a href="{{$job}}" class="list-group-item list-group-item-action">{{$job}}</a>
+                    {{- end}}
+                </div>
+            {{ else }}
+                <p>No previous jobs found.</p>
             {{- end}}
         </div>
-
-    {{ else }}
-        <p>No previous jobs found.</p>
-    {{- end}}
+        <div class="form-group col-md-6">
+            <h3>Create new job</h3>
+            <form action="/job" method="post">
+                <div class="form-group">
+                    <label for="jobName">Job name</label>
+                    <input class="form-control" id="jobName" name="jobName" autofocus>
+                </div>
+                <button type="submit" class="btn btn-primary">Create</button>
+            </form>
+        </div>
+    </div>
 </div>
 {{ template "javascript" }}
+<script type="application/javascript">
+    // encodeURIComponent
+    $(document).ready(function () {
+        console.log("document loaded.");
+        $('a').each(function () {
+            console.log('before: ' + $(this).attr('href'));
+            var encoded = encodeURIComponent($(this).attr('href'));
+            $(this).attr('href', '/job?jobName='+encoded);
+            console.log('after: ' + $(this).attr('href'));
+        })
+    });
+</script>
 </body>
 </html>

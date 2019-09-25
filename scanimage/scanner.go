@@ -1,6 +1,7 @@
 package scanimage
 
 import (
+	"errors"
 	"fmt"
 	"github.com/adelolmo/sane-web-client/debug"
 	"github.com/adelolmo/sane-web-client/thumbnail"
@@ -162,17 +163,19 @@ func (s *Scan) Start(baseDir string, imageFilename string) {
 	}()
 }
 
-func Device() string {
+func Device() (string, error) {
 	// scanimage -f "scanner number %i device %d is a %t, model %m, produced by %v"
 	// scanimage -f "%m"
 	command := exec.Command("/usr/bin/scanimage", "--formatted-device-list", "\"%m\"")
 	debug.Info(strings.Join(command.Args, " "))
 	out, err := command.Output()
 	if err != nil {
-		debug.Error(fmt.Sprintf("Error executing scanimage command. Output: %s. Error:%v", out, err))
-		return ""
+		return "", errors.New(fmt.Sprintf("Error executing scanimage command. Output: %s. Error:%v", out, err))
 	}
-	return string(out)
+	if len(out) == 0 {
+		return "", errors.New("no device available")
+	}
+	return string(out), nil
 }
 
 func generatePdfFromJpeg(srcImagePath string, outPdfPath string) {

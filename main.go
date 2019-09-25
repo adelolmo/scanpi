@@ -378,12 +378,19 @@ func scannerHandler(w http.ResponseWriter, r *http.Request) {
 		Status string `json:"status"`
 	}
 
-	deviceName := scanimage.Device()
+	jsonBody := scanner{
+		Name:   "Unknown",
+		Status: "Not available",
+	}
+	deviceName, err := scanimage.Device()
+	if err == nil {
+		jsonBody = scanner{
+			Name:   deviceName,
+			Status: "Available",
+		}
+	}
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(scanner{
-		Name:   deviceName,
-		Status: "Available",
-	}); err != nil {
+	if err := json.NewEncoder(w).Encode(jsonBody); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
