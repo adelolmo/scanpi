@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/zip"
 	"encoding/json"
 	"fmt"
 	"github.com/adelolmo/sane-web-client/debug"
@@ -10,6 +11,7 @@ import (
 	"github.com/gobuffalo/packr"
 	"github.com/gorilla/mux"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -128,6 +130,7 @@ func main() {
 	router.HandleFunc("/scan", scanHandler).Methods("POST")
 	router.HandleFunc("/deleteScan", deleteScanHandler).Methods("POST")
 	router.HandleFunc("/download", downloadFileHandler).Methods("GET")
+	router.HandleFunc("/downloadall", downloadAllHandler).Methods("GET")
 	router.HandleFunc("/preview", previewHandler).Methods("GET")
 
 	router.HandleFunc("/scanner", scannerHandler).Methods("GET")
@@ -328,19 +331,6 @@ func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
-	//queryStr := "name=Rajeev%20Singh&phone=%2B9199999999&phone=%2B628888888888"
-
-	params, err := url.ParseQuery(r.RequestURI)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
-	fmt.Println("Query Params: ")
-	for key, value := range params {
-		fmt.Printf("  %v = %v\n", key, value)
-	}
-
 	debug.Info("downloadFileHandler")
 	encodedJobName := r.FormValue("jobName")
 	jobName, err := url.QueryUnescape(encodedJobName)
@@ -349,8 +339,6 @@ func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	scan := r.FormValue("scan")
 
-	debug.Info(fmt.Sprintf("jobName: %s", jobName))
-	debug.Info(fmt.Sprintf("scan: %s", scan))
 	imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
 	debug.Info(fmt.Sprintf("imagePath: %s", imagePath))
 	file, err := ioutil.ReadFile(imagePath)
@@ -365,6 +353,56 @@ func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write(file); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func downloadAllHandler(w http.ResponseWriter, r *http.Request) {
+	debug.Info("downloadAllHandler")
+	encodedJobName := r.FormValue("jobName")
+	jobName, err := url.QueryUnescape(encodedJobName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	var scans []string
+	directory := fs.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
+	for _, file := range directory {
+		scans = append(scans, file.Name())
+	}
+
+	w.Header().Set("content-disposition",
+		fmt.Sprintf("attachment; filename=\"%s.zip\"", jobName))
+	writer := zip.NewWriter(w)
+	for _, filename := range scans {
+		err := appendFiles(path.Join(appConfiguration.OutputDirectory, jobName, filename), writer, filename)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}
+	if err := writer.Close(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func appendFiles(path string, zipw *zip.Writer, filename string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("failed to open %s: %s", path, err)
+	}
+
+	wr, err := zipw.Create(filename)
+	if err != nil {
+		msg := "Failed to create entry for %s in zip file: %s"
+		return fmt.Errorf(msg, path, err)
+	}
+
+	if _, err := io.Copy(wr, file); err != nil {
+		return fmt.Errorf("failed to write %s to zip: %s", path, err)
+	}
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("failed to close file %s to zip: %s", file.Name(), err)
+	}
+
+	return nil
 }
 
 func previewHandler(w http.ResponseWriter, r *http.Request) {

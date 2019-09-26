@@ -17,9 +17,14 @@
         <form id="print" action="/scan" method="post">
             <input type="hidden" name="jobName" value="{{.JobName}}"/>
             <div class="row">
-                <div class="col-sm-10">
-                    <input class="btn btn-primary btn-lg btn-block" {{ if .JobStarted }}disabled{{ end }} type="submit"
+                <div class="col-sm-8">
+                    <input class="btn btn-secondary btn-lg btn-block" {{ if .JobStarted }}disabled{{ end }} type="submit"
                            value="Start Scanning">
+                </div>
+                <div class="col-sm-2">
+                    <button type="button" class="btn btn-primary btn-lg btn-block"
+                            onclick="downloadAll({{.JobName}});">Download All
+                    </button>
                 </div>
                 <div class="col-sm-2">
                     <button type="button" class="btn btn-danger btn-lg btn-block"
@@ -137,6 +142,11 @@
     function download(jobName, scan) {
         const encodedJobName = encodeURIComponent(jobName);
         window.location.href = '/download?jobName=' + encodedJobName + '&scan=' + scan
+    }
+
+    function downloadAll(jobName) {
+        const encodedJobName = encodeURIComponent(jobName);
+        window.location.href = '/downloadall?jobName=' + encodedJobName
     }
 
     function refreshPage(jobName) {
