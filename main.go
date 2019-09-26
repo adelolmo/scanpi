@@ -1,17 +1,16 @@
 package main
 
 import (
-	"archive/zip"
 	"encoding/json"
 	"fmt"
 	"github.com/adelolmo/sane-web-client/debug"
 	"github.com/adelolmo/sane-web-client/fs"
 	"github.com/adelolmo/sane-web-client/scanimage"
 	"github.com/adelolmo/sane-web-client/thumbnail"
+	"github.com/adelolmo/sane-web-client/zipper"
 	"github.com/gobuffalo/packr"
 	"github.com/gorilla/mux"
 	"html/template"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -369,40 +368,16 @@ func downloadAllHandler(w http.ResponseWriter, r *http.Request) {
 		scans = append(scans, file.Name())
 	}
 
-	w.Header().Set("content-disposition",
-		fmt.Sprintf("attachment; filename=\"%s.zip\"", jobName))
-	writer := zip.NewWriter(w)
+	w.Header().Set("content-disposition", fmt.Sprintf("attachment; filename=\"%s.zip\"", jobName))
+	zip := zipper.NewZipper(w)
 	for _, filename := range scans {
-		err := appendFiles(path.Join(appConfiguration.OutputDirectory, jobName, filename), writer, filename)
-		if err != nil {
+		if err := zip.AddFile(path.Join(appConfiguration.OutputDirectory, jobName, filename), filename); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	}
-	if err := writer.Close(); err != nil {
+	if err := zip.Close(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-}
-
-func appendFiles(path string, zipw *zip.Writer, filename string) error {
-	file, err := os.Open(path)
-	if err != nil {
-		return fmt.Errorf("failed to open %s: %s", path, err)
-	}
-
-	wr, err := zipw.Create(filename)
-	if err != nil {
-		msg := "Failed to create entry for %s in zip file: %s"
-		return fmt.Errorf(msg, path, err)
-	}
-
-	if _, err := io.Copy(wr, file); err != nil {
-		return fmt.Errorf("failed to write %s to zip: %s", path, err)
-	}
-	if err := file.Close(); err != nil {
-		return fmt.Errorf("failed to close file %s to zip: %s", file.Name(), err)
-	}
-
-	return nil
 }
 
 func previewHandler(w http.ResponseWriter, r *http.Request) {

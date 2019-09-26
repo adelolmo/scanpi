@@ -5,7 +5,7 @@
 
 {{ template "nav" . }}
 <div class="container">
-    <h2>{{.JobName}}&nbsp;&nbsp;&nbsp;
+    <h2>{{.JobName}}
         {{ if .JobStarted }}
             <button type="button" class="btn btn-outline-success"
                     onClick="refreshPage({{.JobName}});">Refresh
@@ -17,16 +17,17 @@
         <form id="print" action="/scan" method="post">
             <input type="hidden" name="jobName" value="{{.JobName}}"/>
             <div class="row">
-                <div class="col-sm-8">
-                    <input class="btn btn-secondary btn-lg btn-block" {{ if .JobStarted }}disabled{{ end }} type="submit"
+                <div class="col-sm-4">
+                    <input class="btn btn-secondary btn-lg btn-block" {{ if .JobStarted }}disabled{{ end }}
+                           type="submit"
                            value="Start Scanning">
                 </div>
-                <div class="col-sm-2">
+                <div class="col-sm-4">
                     <button type="button" class="btn btn-primary btn-lg btn-block"
                             onclick="downloadAll({{.JobName}});">Download All
                     </button>
                 </div>
-                <div class="col-sm-2">
+                <div class="col-sm-4">
                     <button type="button" class="btn btn-danger btn-lg btn-block"
                             onclick="deleteJob({{.JobName}});">Delete Job
                     </button>
@@ -41,7 +42,7 @@
         {{if .Scans -}}
             {{ $jobName := .JobName }}
             {{range $scan := .Scans }}
-                <div class="col-sm-6">
+                <div class="col-sm-4">
                     <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">{{$scan}}</h5>
@@ -51,13 +52,13 @@
                         <div class="card-footer">
                             <div class="row">
                                 <div class="col-sm-6">
-                                    <button type="button" class="btn btn-primary btn-lg btn-block"
-                                            onclick="download({{$jobName}},{{$scan}})" ;>
+                                    <button type="button" class="btn btn-primary btn-block"
+                                            onclick="download({{$jobName}},{{$scan}})";>
                                         Download
                                     </button>
                                 </div>
                                 <div class="col-sm-6">
-                                    <button type="button" class="btn btn-danger btn-lg btn-block"
+                                    <button type="button" class="btn btn-danger btn-block"
                                             onclick="deleteScan({{$jobName}},{{$scan}});">Delete
                                     </button>
                                 </div>
