@@ -16,7 +16,7 @@ func ImageFilesOnDirectory(dir string) []os.FileInfo {
 		return []os.FileInfo{}
 	}
 	sort.Slice(files, func(i, j int) bool {
-		return files[i].Name() > files[j].Name()
+		return files[i].ModTime().Before(files[j].ModTime())
 	})
 	i := 0
 	for _, file := range files {

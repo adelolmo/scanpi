@@ -53,7 +53,7 @@
                             <div class="row">
                                 <div class="col-sm-6">
                                     <button type="button" class="btn btn-primary btn-block"
-                                            onclick="download({{$jobName}},{{$scan}})";>
+                                            onclick="download({{$jobName}},{{$scan}})" ;>
                                         Download
                                     </button>
                                 </div>
@@ -126,6 +126,45 @@
             </div>
         </div>
     </div>
+
+    <!-- download all modal -->
+    <div class="modal fade" id="downloadAllModal" tabindex="-1" role="dialog" aria-labelledby="downloadAllModalTitle"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="downloadAllModalTitle">Select download mode</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <dl>
+                        <dt>Zip file</dt>
+                        <dd>Compress all images into a .zip file.</dd>
+                        <dt>Pdf document</dt>
+                        <dd>Create a pdf document with the images. Only .jpeg and .png images are supported.</dd>
+                    </dl>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <button type="submit" class="btn btn-secondary btn-block"
+                                    onclick="downloadEnvelope({{.JobName}}, 'zip');">
+                                Zip file
+                            </button>
+                        </div>
+                        <div class="col-sm-6">
+                            <button type="submit" class="btn btn-secondary btn-block"
+                                    onclick="downloadEnvelope({{.JobName}}, 'pdf');">
+                                Pdf document
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {{ template "javascript" }}
 <script>
@@ -145,11 +184,6 @@
         window.location.href = '/download?jobName=' + encodedJobName + '&scan=' + scan
     }
 
-    function downloadAll(jobName) {
-        const encodedJobName = encodeURIComponent(jobName);
-        window.location.href = '/downloadall?jobName=' + encodedJobName
-    }
-
     function refreshPage(jobName) {
         const encodedJobName = encodeURIComponent(jobName);
         window.location.href = '/job?jobName=' + encodedJobName;
@@ -164,6 +198,17 @@
         $('#scanModalJobName').val(jobName);
         $('#scanModalScan').val(scan);
         $('#deleteScanModal').modal()
+    }
+
+    function downloadAll(jobName) {
+        $('#downloadAllModalJobName').val(jobName);
+        $('#downloadAllModal').modal()
+    }
+
+    function downloadEnvelope(jobName, envelope) {
+        const encodedJobName = encodeURIComponent(jobName);
+        window.location.href = '/downloadall?jobName=' + encodedJobName + '&envelope=' + envelope;
+        $('#downloadAllModal').modal('hide')
     }
 </script>
 </body>

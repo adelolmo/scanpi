@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/adelolmo/sane-web-client/debug"
 	"github.com/adelolmo/sane-web-client/fs"
+	"github.com/adelolmo/sane-web-client/pdf"
 	"github.com/adelolmo/sane-web-client/scanimage"
 	"github.com/adelolmo/sane-web-client/thumbnail"
 	"github.com/adelolmo/sane-web-client/zipper"
@@ -356,6 +357,7 @@ func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 
 func downloadAllHandler(w http.ResponseWriter, r *http.Request) {
 	debug.Info("downloadAllHandler")
+	envelope := r.FormValue("envelope")
 	encodedJobName := r.FormValue("jobName")
 	jobName, err := url.QueryUnescape(encodedJobName)
 	if err != nil {
@@ -368,15 +370,28 @@ func downloadAllHandler(w http.ResponseWriter, r *http.Request) {
 		scans = append(scans, file.Name())
 	}
 
-	w.Header().Set("content-disposition", fmt.Sprintf("attachment; filename=\"%s.zip\"", jobName))
-	zip := zipper.NewZipper(w)
-	for _, filename := range scans {
-		if err := zip.AddFile(path.Join(appConfiguration.OutputDirectory, jobName, filename), filename); err != nil {
+	switch envelope {
+	case "zip":
+		zip := zipper.NewZipper(w)
+		for _, filename := range scans {
+			if err := zip.AddFile(path.Join(appConfiguration.OutputDirectory, jobName, filename), filename); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+		}
+		if err := zip.Close(); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-	}
-	if err := zip.Close(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		w.Header().Set("content-disposition", fmt.Sprintf("attachment; filename=\"%s.zip\"", jobName))
+	case "pdf":
+		pdfFile := pdf.NewPdfFile()
+		for _, filename := range scans {
+			pdfFile.AddImage(path.Join(appConfiguration.OutputDirectory, jobName, filename))
+		}
+		if err := pdfFile.Generate(w); err != nil {
+			debug.Error(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		w.Header().Set("content-disposition", fmt.Sprintf("attachment; filename=\"%s.pdf\"", jobName))
 	}
 }
 
