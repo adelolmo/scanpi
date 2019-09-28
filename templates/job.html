@@ -133,17 +133,17 @@
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="downloadAllModalTitle">Select download mode</h5>
+                    <h5 class="modal-title" id="downloadAllModalTitle">Download options</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
                     <dl>
-                        <dt>Zip file</dt>
-                        <dd>Compress all images into a .zip file.</dd>
-                        <dt>Pdf document</dt>
-                        <dd>Create a pdf document with the images. Only .jpeg and .png images are supported.</dd>
+                        <dt><i class="far fa-file-archive"></i> Zip file</dt>
+                        <dd>Compress all images into a zip file.</dd>
+                        <dt><i class="far fa-file-pdf"></i> Pdf document</dt>
+                        <dd>Create a pdf document with the images. Only <i>.jpeg</i> and <i>.png</i> images are supported.</dd>
                     </dl>
                 </div>
                 <div class="modal-body">
@@ -151,13 +151,13 @@
                         <div class="col-sm-6">
                             <button type="submit" class="btn btn-secondary btn-block"
                                     onclick="downloadEnvelope({{.JobName}}, 'zip');">
-                                Zip file
+                                <i class="far fa-file-archive"></i> Zip file
                             </button>
                         </div>
                         <div class="col-sm-6">
-                            <button type="submit" class="btn btn-secondary btn-block"
+                            <button class="btn btn-secondary btn-block"
                                     onclick="downloadEnvelope({{.JobName}}, 'pdf');">
-                                Pdf document
+                                <i class="far fa-file-pdf"></i> Pdf document
                             </button>
                         </div>
                     </div>

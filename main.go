@@ -336,6 +336,7 @@ func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	jobName, err := url.QueryUnescape(encodedJobName)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	scan := r.FormValue("scan")
 
@@ -344,6 +345,7 @@ func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	file, err := ioutil.ReadFile(imagePath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", contentType(imagePath))
@@ -352,6 +354,7 @@ func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Sprintf("attachment; filename=\"%s-%s\"", jobName, scan))
 	if _, err := w.Write(file); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -362,6 +365,7 @@ func downloadAllHandler(w http.ResponseWriter, r *http.Request) {
 	jobName, err := url.QueryUnescape(encodedJobName)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	var scans []string
@@ -372,26 +376,31 @@ func downloadAllHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch envelope {
 	case "zip":
+		w.Header().Set("content-disposition", fmt.Sprintf("attachment; filename=\"%s.zip\"", jobName))
 		zip := zipper.NewZipper(w)
 		for _, filename := range scans {
 			if err := zip.AddFile(path.Join(appConfiguration.OutputDirectory, jobName, filename), filename); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
 			}
 		}
 		if err := zip.Close(); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
-		w.Header().Set("content-disposition", fmt.Sprintf("attachment; filename=\"%s.zip\"", jobName))
 	case "pdf":
+		w.Header().Set("content-disposition", fmt.Sprintf("attachment; filename=\"%s.pdf\"", jobName))
 		pdfFile := pdf.NewPdfFile()
 		for _, filename := range scans {
-			pdfFile.AddImage(path.Join(appConfiguration.OutputDirectory, jobName, filename))
+			if err := pdfFile.AddImage(path.Join(appConfiguration.OutputDirectory, jobName, filename)); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
 		if err := pdfFile.Generate(w); err != nil {
-			debug.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
-		w.Header().Set("content-disposition", fmt.Sprintf("attachment; filename=\"%s.pdf\"", jobName))
 	}
 }
 
