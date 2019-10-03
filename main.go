@@ -149,6 +149,7 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := indexTemplate.Execute(w, &index{Navigation: "home"}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -156,6 +157,7 @@ func showSettingsPage(w http.ResponseWriter, r *http.Request) {
 	settings := readSettings()
 	if err := settingsTemplate.Execute(w, settings); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -173,10 +175,12 @@ func updateSettingsPage(w http.ResponseWriter, r *http.Request) {
 	settingsJson, _ := json.Marshal(settings)
 	if err := ioutil.WriteFile(path.Join(appConfiguration.WorkDirectory, "settings.json"), settingsJson, 0644); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	if err := settingsTemplate.Execute(w, settings); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -193,6 +197,7 @@ func showJobsPage(w http.ResponseWriter, r *http.Request) {
 	err := jobsTemplate.Execute(w, index)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -201,6 +206,7 @@ func resumeJobPage(w http.ResponseWriter, r *http.Request) {
 	jobName, err := url.QueryUnescape(encodedJobName)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	var scans []string
@@ -216,6 +222,7 @@ func resumeJobPage(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := jobTemplate.Execute(w, scanner); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -223,6 +230,7 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
 	if err := os.MkdirAll(path.Join(appConfiguration.OutputDirectory, jobName), os.ModePerm); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	var scans []string
@@ -237,6 +245,7 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := jobTemplate.Execute(w, scanner); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -245,7 +254,8 @@ func deleteJobHandler(w http.ResponseWriter, r *http.Request) {
 
 	jobPath := path.Join(appConfiguration.OutputDirectory, jobName)
 	if err := os.RemoveAll(jobPath); err != nil {
-		log.Println(fmt.Sprintf("unable to delete job directory %s.", jobPath), err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	var previousJobs []string
@@ -260,6 +270,7 @@ func deleteJobHandler(w http.ResponseWriter, r *http.Request) {
 	err := jobsTemplate.Execute(w, index)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -299,6 +310,7 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := jobTemplate.Execute(w, scanner); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
@@ -309,10 +321,12 @@ func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
 	debug.Info(fmt.Sprintf("delete image %s\n", imagePath))
 
 	if err := os.Remove(imagePath); err != nil {
-		fmt.Println(fmt.Sprintf("unable to delete image file %s.", imagePath), err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	if err := thumbnail.DeletePreview(imagePath); err != nil {
-		fmt.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	var scans []string
@@ -328,6 +342,7 @@ func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := jobTemplate.Execute(w, scanner); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
