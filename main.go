@@ -281,7 +281,7 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 	fileExtension := readSettings().Format
 	scanName := fmt.Sprintf("1.%s", fileExtension)
 	if len(previousScans) > 0 {
-		lastScanName := previousScans[0].Name()
+		lastScanName := previousScans[len(previousScans)-1].Name()
 		lastScanNumber, err := strconv.Atoi(strings.Split(lastScanName, ".")[0])
 		if err != nil {
 			fmt.Println(err)
