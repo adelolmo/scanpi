@@ -8,6 +8,16 @@
 <div class="container">
     <div class="form-row">
         <div class="form-group col-md-6">
+            <h3>Create new job</h3>
+            <form action="/job" method="post">
+                <div class="form-group">
+                    <label for="jobName">Job name</label>
+                    <input class="form-control" id="jobName" name="jobName" autofocus>
+                </div>
+                <button type="submit" class="btn btn-outline-primary">Create</button>
+            </form>
+        </div>
+        <div class="form-group col-md-6">
             {{if .PreviousJobs -}}
                 <h3>Select job</h3>
                 <div class="list-group">
@@ -18,16 +28,6 @@
             {{ else }}
                 <p>No previous jobs found.</p>
             {{- end}}
-        </div>
-        <div class="form-group col-md-6">
-            <h3>Create new job</h3>
-            <form action="/job" method="post">
-                <div class="form-group">
-                    <label for="jobName">Job name</label>
-                    <input class="form-control" id="jobName" name="jobName" autofocus>
-                </div>
-                <button type="submit" class="btn btn-primary">Create</button>
-            </form>
         </div>
     </div>
 </div>

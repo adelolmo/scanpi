@@ -18,17 +18,17 @@
             <input type="hidden" name="jobName" value="{{.JobName}}"/>
             <div class="row">
                 <div class="col-sm-4">
-                    <input class="btn btn-secondary btn-lg btn-block" {{ if .JobStarted }}disabled{{ end }}
+                    <input class="btn btn-outline-primary btn-lg btn-block" {{ if .JobStarted }}disabled{{ end }}
                            type="submit"
                            value="Start Scanning">
                 </div>
                 <div class="col-sm-4">
-                    <button type="button" class="btn btn-primary btn-lg btn-block"
+                    <button type="button" class="btn btn-outline-primary btn-lg btn-block"
                             onclick="downloadAll({{.JobName}});">Download All
                     </button>
                 </div>
                 <div class="col-sm-4">
-                    <button type="button" class="btn btn-danger btn-lg btn-block"
+                    <button type="button" class="btn btn-outline-primary btn-lg btn-block"
                             onclick="deleteJob({{.JobName}});">Delete Job
                     </button>
                 </div>
@@ -42,7 +42,7 @@
         {{if .Scans -}}
             {{ $jobName := .JobName }}
             {{range $scan := .Scans }}
-                <div class="col-sm-4">
+                <div class="col-sm-3">
                     <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">{{$scan}}</h5>
@@ -52,13 +52,13 @@
                         <div class="card-footer">
                             <div class="row">
                                 <div class="col-sm-6">
-                                    <button type="button" class="btn btn-primary btn-block"
+                                    <button type="button" class="btn btn-outline-primary btn-sm"
                                             onclick="download({{$jobName}},{{$scan}})" ;>
                                         Download
                                     </button>
                                 </div>
                                 <div class="col-sm-6">
-                                    <button type="button" class="btn btn-danger btn-block"
+                                    <button type="button" class="btn btn-outline-primary btn-sm"
                                             onclick="deleteScan({{$jobName}},{{$scan}});">Delete
                                     </button>
                                 </div>
@@ -94,10 +94,10 @@
                     </button>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-dismiss="modal">No</button>
+                    <button type="button" class="btn btn-outline-primary" data-dismiss="modal">No</button>
                     <form action="/deleteJob" method="post">
                         <input type="hidden" name="jobName" id="jobModalJobName"/>
-                        <button type="submit" class="btn btn-danger">Yes</button>
+                        <button type="submit" class="btn btn-outline-danger">Yes</button>
                     </form>
                 </div>
             </div>
@@ -116,11 +116,11 @@
                     </button>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-dismiss="modal">No</button>
+                    <button type="button" class="btn btn-outline-primary" data-dismiss="modal">No</button>
                     <form action="/deleteScan" method="post">
                         <input type="hidden" name="jobName" id="scanModalJobName"/>
                         <input type="hidden" name="scan" id="scanModalScan"/>
-                        <button type="submit" class="btn btn-danger">Yes</button>
+                        <button type="submit" class="btn btn-outline-danger">Yes</button>
                     </form>
                 </div>
             </div>
@@ -149,13 +149,13 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-sm-6">
-                            <button type="submit" class="btn btn-secondary btn-block"
+                            <button type="submit" class="btn btn-outline-primary btn-block"
                                     onclick="downloadEnvelope({{.JobName}}, 'zip');">
                                 <i class="far fa-file-archive"></i> Zip file
                             </button>
                         </div>
                         <div class="col-sm-6">
-                            <button class="btn btn-secondary btn-block"
+                            <button class="btn btn-outline-primary btn-block"
                                     onclick="downloadEnvelope({{.JobName}}, 'pdf');">
                                 <i class="far fa-file-pdf"></i> Pdf document
                             </button>

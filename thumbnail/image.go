@@ -53,7 +53,7 @@ func GenerateThumbnail(srcImagePath string, outImagePath string) error {
 	}
 	debug.Info("done")
 	debug.Info("resize image")
-	dst := imaging.Resize(srcImage, 0, 250, imaging.Box)
+	dst := imaging.Resize(srcImage, 0, 250, imaging.NearestNeighbor)
 	debug.Info("done")
 	debug.Info("save image")
 	err = imaging.Save(dst, previewPath+".jpeg")
