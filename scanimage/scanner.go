@@ -109,7 +109,6 @@ func (s *Scan) Start(baseDir string, imageFilename string) {
 	go func() {
 		debug.Info(fmt.Sprintf("Scanning process for %s. Start", imageFilename))
 
-		outImageFilename := path.Join(baseDir, imageFilename)
 		// su -s /bin/sh - saned
 		command := exec.Command("/usr/bin/scanimage",
 			fmt.Sprintf("--mode=%s", s.Mode.String()),
@@ -122,14 +121,14 @@ func (s *Scan) Start(baseDir string, imageFilename string) {
 			return
 		}
 
-		err = ioutil.WriteFile(outImageFilename, out, 0644)
+		err = ioutil.WriteFile(path.Join(baseDir, imageFilename), out, 0644)
 		if err != nil {
 			debug.Error(fmt.Sprintf("Cannot write image file on %s. Error: %s", imageFilename, err))
 		}
 
 		debug.Info(fmt.Sprintf("Scanning process for %s. End", imageFilename))
 
-		if err = thumbnail.GenerateThumbnail(outImageFilename, path.Join(baseDir, imageFilename)); err != nil {
+		if err = thumbnail.GenerateThumbnail(baseDir, imageFilename); err != nil {
 			debug.Error(err.Error())
 		}
 	}()

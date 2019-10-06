@@ -428,7 +428,6 @@ func previewHandler(w http.ResponseWriter, r *http.Request) {
 	imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
 	buffer, err := thumbnail.Preview(imagePath)
 	if err != nil {
-		fmt.Println(fmt.Sprintf("unable to get thumbnail %s. Error: %s", imagePath, err.Error()))
 		box := packr.NewBox("./assets")
 		b, err := box.Find("not_available.jpeg")
 		if err != nil {
