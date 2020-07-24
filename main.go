@@ -228,6 +228,10 @@ func resumeJobPage(w http.ResponseWriter, r *http.Request) {
 
 func createJobHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
+	if len(jobName) == 0 {
+		http.Error(w, "jobName cannot be empty", http.StatusBadRequest)
+		return
+	}
 	if err := os.MkdirAll(path.Join(appConfiguration.OutputDirectory, jobName), os.ModePerm); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

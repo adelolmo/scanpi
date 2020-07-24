@@ -1,3 +1,9 @@
+sane-web-client (1.1) unstable; urgency=medium
+
+  * validate job name is given
+
+ -- Andoni del Olmo <andoni.delolmo@gmail.com>  Fri, 24 Jul 2020 21:08:58 +0200
+
 sane-web-client (1.0) unstable; urgency=medium
 
   * Start scan with custom settings: resolution, mode and format.
