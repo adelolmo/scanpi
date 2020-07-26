@@ -1,6 +1,5 @@
 .idea
 *.iml
-build
 obj*
 debian/sane-web-client
 debian/debhelper-build-stamp

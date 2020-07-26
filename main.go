@@ -9,7 +9,7 @@ import (
 	"github.com/adelolmo/sane-web-client/scanimage"
 	"github.com/adelolmo/sane-web-client/thumbnail"
 	"github.com/adelolmo/sane-web-client/zipper"
-	"github.com/gobuffalo/packr"
+	"github.com/gobuffalo/packr/v2"
 	"github.com/gorilla/mux"
 	"html/template"
 	"io/ioutil"
@@ -58,7 +58,7 @@ var settingsTemplate *template.Template
 var appConfiguration configuration
 
 func init() {
-	box := packr.NewBox("./templates")
+	box := packr.New("templates", "./templates")
 	indexFile, err := box.FindString("index.html")
 	if err != nil {
 		log.Fatalln(err)
@@ -116,7 +116,7 @@ func main() {
 		}
 	}
 
-	box := packr.NewBox("assets/")
+	box := packr.New("assets", "assets/")
 
 	router := mux.NewRouter()
 	router.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", http.FileServer(box)))
@@ -432,7 +432,7 @@ func previewHandler(w http.ResponseWriter, r *http.Request) {
 	imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
 	buffer, err := thumbnail.Preview(imagePath)
 	if err != nil {
-		box := packr.NewBox("./assets")
+		box := packr.New("assets", "./assets")
 		b, err := box.Find("not_available.jpeg")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -25,7 +25,7 @@ endif
 # Note: If your doing building thru git, you may want to add obj-* to .gitignore
 BUILD_DIR := obj-$(DEB_HOST_GNU_TYPE)
 
-export GO := packr
+export GO := packr2
 # Required: Put the url (without http://) of your git repo.
 export DH_GOPKG := github.com/adelolmo/sane-web-client
 export GOCACHE := $(GOPATH)/pkg
@@ -46,13 +46,12 @@ export DH_GOLANG_INSTALL_ALL := 1
 
 override_dh_clean:
 	dh_clean
-	rm -f debian/$(GIT_REPO_NAME).debhelper.log
 	rm -rf debian/$(GIT_REPO_NAME)
 	rm -rf $(BUILD_DIR)
 
 override_dh_auto_build:
 	dh_auto_build -- -ldflags "-s -w"
-	go get github.com/gobuffalo/packr/packr
+	go get -u github.com/gobuffalo/packr/v2/packr2
 	##
 	# From git-lfs/git-lfs repo:
 	# dh_golang doesn't do anything here in deb 8, and it's needed in both
