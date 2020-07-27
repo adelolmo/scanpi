@@ -20,6 +20,6 @@ require (
 	github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8 // indirect
 	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899 // indirect
 	golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a
-	golang.org/x/sys v0.0.0-20200724161237-0e2f3a69832c // indirect
-	golang.org/x/tools v0.0.0-20200725200936-102e7d357031 // indirect
+	golang.org/x/sys v0.0.0-20200727154430-2d971f7391a4 // indirect
+	golang.org/x/tools v0.0.0-20200727154626-eaaaedc6afa7 // indirect
 )
