@@ -41,26 +41,23 @@ export PATH := $(CURDIR)/$(BUILD_DIR)/bin:$(PATH)
 export DH_GOLANG_INSTALL_ALL := 1
 
 %:
-	dh $@ --buildsystem=golang --with=golang
+	GOFLAGS=-mod=vendor GOCACHE=/tmp/gocache dh $@ --buildsystem=golang --with=golang
 
 clean:
-	chmod -R +w $(BUILD_DIR)
+	rm -rf debian/.debhelper
 	rm -rf debian/$(GIT_REPO_NAME)
-	rm -rf $(BUILD_DIR)
 	dh_clean
 
 override_dh_auto_build:
-	dh_auto_build -- -ldflags "-s -w"
-	go get -u github.com/gobuffalo/packr/v2/packr2
+	go get github.com/gobuffalo/packr/v2/packr2
+	packr2
+	dh_auto_build
 	##
 	# From git-lfs/git-lfs repo:
 	# dh_golang doesn't do anything here in deb 8, and it's needed in both
 	##
-	packr2 build
-	mv $(GIT_REPO_NAME) $(BUILD_DIR)/bin/$(GIT_REPO_NAME)
 	if [ "$(DEB_HOST_GNU_TYPE)" != "$(DEB_BUILD_GNU_TYPE)" ]; then\
 		cp -rf $(BUILD_DIR)/bin/*/* $(BUILD_DIR)/bin/; \
-		cp -rf $(BUILD_DIR)/pkg/*/* $(BUILD_DIR)/pkg/; \
 	fi
 	packr2 clean
 
@@ -82,5 +79,3 @@ override_dh_golang:
 override_dh_auto_install:
 	install -g 0 -o 0 -d debian/$(GIT_REPO_NAME)/usr/bin
 	cp $(BUILD_DIR)/bin/$(GIT_REPO_NAME) debian/$(GIT_REPO_NAME)/usr/bin
-	#install -g 0 -o 0 -d debian/$(GIT_REPO_NAME)/etc
-	#cp debian/$(GIT_REPO_NAME).conf debian/$(GIT_REPO_NAME)/etc
