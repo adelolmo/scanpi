@@ -94,13 +94,13 @@ func main() {
 	if port == "" {
 		port = "8000"
 	}
-	outputDirectory := os.Getenv("outputDir")
-	workDirectory := os.Getenv("workDir")
+	outputDirectory := os.Getenv("output_dir")
+	workDirectory := os.Getenv("work_dir")
 	appConfiguration = configuration{
 		OutputDirectory: outputDirectory,
 		WorkDirectory:   workDirectory,
 	}
-	fmt.Println(fmt.Sprintf("port: %s, outputDir: %s, workDir: %s, debug: %v",
+	fmt.Println(fmt.Sprintf("port: %s, output_dir: %s, work_dir: %s, debug: %v",
 		port, outputDirectory, workDirectory, debug.Enabled()))
 
 	settingsFile := path.Join(appConfiguration.WorkDirectory, "settings.json")

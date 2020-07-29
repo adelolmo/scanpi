@@ -1,0 +1,13 @@
+[Unit]
+Description=sane-web-client - Web client for sane-utils
+
+[Service]
+Type=simple
+User=saned
+Group=saned
+EnvironmentFile=/etc/sane-web-client.conf
+ExecStart=/usr/bin/sane-web-client
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

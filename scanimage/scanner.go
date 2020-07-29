@@ -93,27 +93,27 @@ func ToFormat(format string) Format {
 	}
 }
 
-type Scan struct {
-	Mode       Mode
-	Format     Format
-	Resolution int
+type scan struct {
+	mode       Mode
+	format     Format
+	resolution int
 }
 
-func NewScanJob(mode Mode, format Format, resolution int) *Scan {
-	return &Scan{Format: format,
-		Mode:       mode,
-		Resolution: resolution}
+func NewScanJob(mode Mode, format Format, resolution int) *scan {
+	return &scan{format: format,
+		mode:       mode,
+		resolution: resolution}
 }
 
-func (s *Scan) Start(baseDir string, imageFilename string) {
+func (s *scan) Start(baseDir string, imageFilename string) {
 	go func() {
 		debug.Info(fmt.Sprintf("Scanning process for %s. Start", imageFilename))
 
 		// su -s /bin/sh - saned
 		command := exec.Command("/usr/bin/scanimage",
-			fmt.Sprintf("--mode=%s", s.Mode.String()),
-			fmt.Sprintf("--resolution=%d", s.Resolution),
-			fmt.Sprintf("--format=%s", s.Format.String()))
+			fmt.Sprintf("--mode=%s", s.mode.String()),
+			fmt.Sprintf("--resolution=%d", s.resolution),
+			fmt.Sprintf("--format=%s", s.format.String()))
 		debug.Info(strings.Join(command.Args, " "))
 		out, err := command.Output()
 		if err != nil {
