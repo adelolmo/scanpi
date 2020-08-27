@@ -5,166 +5,170 @@
 
 {{ template "nav" . }}
 <div class="container">
-    <h2>{{.JobName}}
+	<h2>{{.JobName}}
         {{ if .JobStarted }}
-            <button type="button" class="btn btn-outline-success"
-                    onClick="refreshPage({{.JobName}});">Refresh
-            </button>
+			<button type="button" class="btn btn-outline-success"
+					onClick="refreshPage({{.JobName}});">Refresh
+			</button>
         {{end}}
-    </h2>
+	</h2>
 
-    <section>
-        <form id="print" action="/scan" method="post">
-            <input type="hidden" name="jobName" value="{{.JobName}}"/>
-            <div class="row">
-                <div class="col-sm-4">
-                    <input class="btn btn-outline-primary btn-lg btn-block" {{ if .JobStarted }}disabled{{ end }}
-                           type="submit"
-                           value="Start Scanning">
-                </div>
-                <div class="col-sm-4">
-                    <button type="button" class="btn btn-outline-primary btn-lg btn-block"
-                            onclick="downloadAll({{.JobName}});">Download Job
-                    </button>
-                </div>
-                <div class="col-sm-4">
-                    <button type="button" class="btn btn-outline-primary btn-lg btn-block"
-                            onclick="deleteJob({{.JobName}});">Delete Job
-                    </button>
-                </div>
-            </div>
-        </form>
-    </section>
+	<section>
+		<form id="print" action="/scan" method="post">
+			<input type="hidden" name="jobName" value="{{.JobName}}"/>
+			<div class="row">
+				<div class="col-sm-4">
+					<input class="btn btn-outline-primary btn-lg btn-block" {{ if .JobStarted }}disabled{{ end }}
+						   type="submit"
+						   value="Start Scanning">
+				</div>
+				<div class="col-sm-4">
+					<button type="button" class="btn btn-outline-primary btn-lg btn-block"
+							onclick="downloadAll({{.JobName}});">Download Job
+					</button>
+				</div>
+				<div class="col-sm-4">
+					<button type="button" class="btn btn-outline-primary btn-lg btn-block"
+							onclick="deleteJob({{.JobName}});">Delete Job
+					</button>
+				</div>
+			</div>
+		</form>
+	</section>
 
-    <br/>
+	<br/>
 
-    <div class="row">
+	<div class="row">
         {{if .Scans -}}
             {{ $jobName := .JobName }}
             {{range $scan := .Scans }}
-                <div class="col-sm-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">{{$scan}}</h5>
-                            <img class="card-img-top" src="/preview?jobName={{$jobName}}&scan={{$scan}}"
-                                 alt="{{$scan}}">
-                        </div>
-                        <div class="card-footer">
-                            <div class="row">
-                                <div class="col-sm-6">
-                                    <button type="button" class="btn btn-outline-primary btn-sm"
-                                            onclick="download({{$jobName}},{{$scan}})" ;>
-                                        Download
-                                    </button>
-                                </div>
-                                <div class="col-sm-6">
-                                    <button type="button" class="btn btn-outline-primary btn-sm"
-                                            onclick="deleteScan({{$jobName}},{{$scan}});">Delete
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+				<div class="col-sm-3">
+					<div class="card">
+						<div class="card-body">
+							<h5 class="card-title">{{$scan}}</h5>
+							<a href="/image?jobName={{$jobName}}&scan={{$scan}}">
+								<img class="card-img-top" src="/preview?jobName={{$jobName}}&scan={{$scan}}"
+									 alt="{{$scan}}">
+							</a>
+						</div>
+						<div class="card-footer">
+							<div class="row">
+								<div class="col-sm-6">
+									<button type="button" class="btn btn-outline-primary btn-sm"
+											onclick="download({{$jobName}},{{$scan}})" ;>
+										Download
+									</button>
+								</div>
+								<div class="col-sm-6">
+									<button type="button" class="btn btn-outline-primary btn-sm"
+											onclick="deleteScan({{$jobName}},{{$scan}});">Delete
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
             {{- end}}
         {{- end}}
-    </div>
+	</div>
     {{ if .JobStarted }}
-        <div id="toast" class="toast" style="position: absolute; top: 0; right: 0;" role="alert" aria-live="assertive"
-             aria-atomic="true">
-            <div class="toast-header">
-                <strong class="mr-auto">Scanner</strong>
-            </div>
-            <div class="toast-body">
-                Scanning job started
-            </div>
-        </div>
+		<div id="toast" class="toast" style="position: absolute; top: 0; right: 0;" role="alert" aria-live="assertive"
+			 aria-atomic="true">
+			<div class="toast-header">
+				<strong class="mr-auto">Scanner</strong>
+			</div>
+			<div class="toast-body">
+				Scanning job started
+			</div>
+		</div>
     {{ end }}
 
 
-    <!-- delete job modal -->
-    <div class="modal fade" id="deleteJobModal" tabindex="-1" role="dialog" aria-labelledby="deleteJobModalTitle"
-         aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="deleteJobModalTitle">Delete Job?</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-primary" data-dismiss="modal">No</button>
-                    <form action="/deleteJob" method="post">
-                        <input type="hidden" name="jobName" id="jobModalJobName"/>
-                        <button type="submit" class="btn btn-outline-danger">Yes</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+	<!-- delete job modal -->
+	<div class="modal fade" id="deleteJobModal" tabindex="-1" role="dialog" aria-labelledby="deleteJobModalTitle"
+		 aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="deleteJobModalTitle">Delete Job?</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-outline-primary" data-dismiss="modal">No</button>
+					<form action="/deleteJob" method="post">
+						<input type="hidden" name="jobName" id="jobModalJobName"/>
+						<button type="submit" class="btn btn-outline-danger">Yes</button>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
 
-    <!-- delete scan modal -->
-    <div class="modal fade" id="deleteScanModal" tabindex="-1" role="dialog" aria-labelledby="deleteScanModalTitle"
-         aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="deleteScanModalTitle">Delete scan?</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-primary" data-dismiss="modal">No</button>
-                    <form action="/deleteScan" method="post">
-                        <input type="hidden" name="jobName" id="scanModalJobName"/>
-                        <input type="hidden" name="scan" id="scanModalScan"/>
-                        <button type="submit" class="btn btn-outline-danger">Yes</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+	<!-- delete scan modal -->
+	<div class="modal fade" id="deleteScanModal" tabindex="-1" role="dialog" aria-labelledby="deleteScanModalTitle"
+		 aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="deleteScanModalTitle">Delete scan?</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-outline-primary" data-dismiss="modal">No</button>
+					<form action="/deleteScan" method="post">
+						<input type="hidden" name="jobName" id="scanModalJobName"/>
+						<input type="hidden" name="scan" id="scanModalScan"/>
+						<button type="submit" class="btn btn-outline-danger">Yes</button>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
 
-    <!-- download all modal -->
-    <div class="modal fade" id="downloadAllModal" tabindex="-1" role="dialog" aria-labelledby="downloadAllModalTitle"
-         aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="downloadAllModalTitle">Download options</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <dl>
-                        <dt><i class="far fa-file-archive"></i> Zip file</dt>
-                        <dd>Compress all images into a zip file.</dd>
-                        <dt><i class="far fa-file-pdf"></i> Pdf document</dt>
-                        <dd>Create a pdf document with the images. Only <i>.jpeg</i> and <i>.png</i> images are supported.</dd>
-                    </dl>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-sm-6">
-                            <button type="submit" class="btn btn-outline-primary btn-block"
-                                    onclick="downloadEnvelope({{.JobName}}, 'zip');">
-                                <i class="far fa-file-archive"></i> Zip file
-                            </button>
-                        </div>
-                        <div class="col-sm-6">
-                            <button class="btn btn-outline-primary btn-block"
-                                    onclick="downloadEnvelope({{.JobName}}, 'pdf');">
-                                <i class="far fa-file-pdf"></i> Pdf document
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+	<!-- download all modal -->
+	<div class="modal fade" id="downloadAllModal" tabindex="-1" role="dialog" aria-labelledby="downloadAllModalTitle"
+		 aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="downloadAllModalTitle">Download options</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<dl>
+						<dt><i class="far fa-file-archive"></i> Zip file</dt>
+						<dd>Compress all images into a zip file.</dd>
+						<dt><i class="far fa-file-pdf"></i> Pdf document</dt>
+						<dd>Create a pdf document with the images. Only <i>.jpeg</i> and <i>.png</i> images are
+							supported.
+						</dd>
+					</dl>
+				</div>
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-sm-6">
+							<button type="submit" class="btn btn-outline-primary btn-block"
+									onclick="downloadEnvelope({{.JobName}}, 'zip');">
+								<i class="far fa-file-archive"></i> Zip file
+							</button>
+						</div>
+						<div class="col-sm-6">
+							<button class="btn btn-outline-primary btn-block"
+									onclick="downloadEnvelope({{.JobName}}, 'pdf');">
+								<i class="far fa-file-pdf"></i> Pdf document
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
 {{ template "javascript" }}
 <script>
