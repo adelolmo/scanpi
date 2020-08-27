@@ -130,6 +130,7 @@ func main() {
 	router.HandleFunc("/scan", scanHandler).Methods("POST")
 	router.HandleFunc("/deleteScan", deleteScanHandler).Methods("POST")
 	router.HandleFunc("/download", downloadFileHandler).Methods("GET")
+	router.HandleFunc("/image", imageHandler).Methods("GET")
 	router.HandleFunc("/downloadall", downloadAllHandler).Methods("GET")
 	router.HandleFunc("/preview", previewHandler).Methods("GET")
 
@@ -349,6 +350,7 @@ func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
 func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	debug.Info("downloadFileHandler")
 	encodedJobName := r.FormValue("jobName")
@@ -359,19 +361,41 @@ func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	scan := r.FormValue("scan")
 
-	imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
-	debug.Info(fmt.Sprintf("imagePath: %s", imagePath))
-	file, err := ioutil.ReadFile(imagePath)
+	image, contentType, err := readImage(jobName, scan)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", contentType(imagePath))
-	w.Header().Set("Content-Length", strconv.Itoa(len(file)))
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Length", strconv.Itoa(len(image)))
 	w.Header().Set("content-disposition",
 		fmt.Sprintf("attachment; filename=\"%s-%s\"", jobName, scan))
-	if _, err := w.Write(file); err != nil {
+	if _, err := w.Write(image); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func imageHandler(w http.ResponseWriter, r *http.Request) {
+	debug.Info("imageHandler")
+	encodedJobName := r.FormValue("jobName")
+	jobName, err := url.QueryUnescape(encodedJobName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	scan := r.FormValue("scan")
+
+	image, contentType, err := readImage(jobName, scan)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Length", strconv.Itoa(len(image)))
+	if _, err := w.Write(image); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -490,6 +514,16 @@ func readSettings() *settings {
 		fmt.Println(err)
 	}
 	return settings
+}
+
+func readImage(jobName string, scan string) ([]byte, string, error) {
+	imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
+	debug.Info(fmt.Sprintf("imagePath: %s", imagePath))
+	file, err := ioutil.ReadFile(imagePath)
+	if err != nil {
+		return  nil, "",err
+	}
+	return file, contentType(imagePath), nil
 }
 
 func contentType(imagePath string) string {

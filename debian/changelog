@@ -1,3 +1,12 @@
+sane-web-client (1.2) unstable; urgency=medium
+
+  * migrate to go mod
+  * upgrade to packr2
+  * rename env vars + move debian related stuff under debian dir
+  * preview image on click
+
+ -- Andoni del Olmo <andoni.delolmo@gmail.com>  Thu, 27 Aug 2020 16:58:47 +0200
+
 sane-web-client (1.1) unstable; urgency=medium
 
   * validate job name is given
