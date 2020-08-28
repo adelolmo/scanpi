@@ -48,6 +48,7 @@ type pageScanner struct {
 type configuration struct {
 	OutputDirectory string
 	WorkDirectory   string
+	ThumbnailFilter string
 }
 
 var indexTemplate *template.Template
@@ -56,6 +57,7 @@ var jobsTemplate *template.Template
 var settingsTemplate *template.Template
 
 var appConfiguration configuration
+var thumb *thumbnail.Thumbnail
 
 func init() {
 	box := packr.New("templates", "./templates")
@@ -96,12 +98,14 @@ func main() {
 	}
 	outputDirectory := os.Getenv("output_dir")
 	workDirectory := os.Getenv("work_dir")
+	thumbnailFilter := os.Getenv("thumbnail_filter")
 	appConfiguration = configuration{
 		OutputDirectory: outputDirectory,
 		WorkDirectory:   workDirectory,
+		ThumbnailFilter: thumbnailFilter,
 	}
-	fmt.Println(fmt.Sprintf("port: %s, output_dir: %s, work_dir: %s, debug: %v",
-		port, outputDirectory, workDirectory, debug.Enabled()))
+	fmt.Println(fmt.Sprintf("port: %s, output_dir: %s, work_dir: %s, thumbnail_filter: %s debug: %v",
+		port, outputDirectory, workDirectory, thumbnailFilter, debug.Enabled()))
 
 	settingsFile := path.Join(appConfiguration.WorkDirectory, "settings.json")
 	if _, err := os.Stat(settingsFile); os.IsNotExist(err) {
@@ -115,6 +119,9 @@ func main() {
 			log.Fatalln(err)
 		}
 	}
+
+	thumb = thumbnail.New(appConfiguration.ThumbnailFilter,
+		appConfiguration.OutputDirectory)
 
 	box := packr.New("assets", "assets/")
 
@@ -295,11 +302,14 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	settings := readSettings()
+
 	resolution, _ := strconv.Atoi(settings.Resolution)
 	scanJob := scanimage.NewScanJob(
 		scanimage.ToMode(settings.Mode),
 		scanimage.ToFormat(settings.Format),
-		resolution)
+		resolution,
+		thumb,
+	)
 	scanJob.Start(appConfiguration.OutputDirectory, path.Join(jobName, scanName))
 
 	var scans []string
@@ -318,6 +328,7 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
 func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
 	scan := r.FormValue("scan")
@@ -329,7 +340,7 @@ func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := thumbnail.DeletePreview(imagePath); err != nil {
+	if err := thumb.DeletePreview(imagePath); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -448,13 +459,19 @@ func downloadAllHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func previewHandler(w http.ResponseWriter, r *http.Request) {
-	jobName := r.FormValue("jobName")
+	debug.Info("previewHandler")
+	encodedJobName := r.FormValue("jobName")
+	jobName, err := url.QueryUnescape(encodedJobName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	scan := r.FormValue("scan")
 
 	w.Header().Set("Content-Type", "image/jpeg")
 
 	imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
-	buffer, err := thumbnail.Preview(imagePath)
+	buffer, err := thumb.Preview(imagePath)
 	if err != nil {
 		box := packr.New("assets", "./assets")
 		b, err := box.Find("not_available.jpeg")
@@ -521,7 +538,7 @@ func readImage(jobName string, scan string) ([]byte, string, error) {
 	debug.Info(fmt.Sprintf("imagePath: %s", imagePath))
 	file, err := ioutil.ReadFile(imagePath)
 	if err != nil {
-		return  nil, "",err
+		return nil, "", err
 	}
 	return file, contentType(imagePath), nil
 }
