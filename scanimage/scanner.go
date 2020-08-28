@@ -97,17 +97,20 @@ type scan struct {
 	mode       Mode
 	format     Format
 	resolution int
+	thumbnail  *thumbnail.Thumbnail
 }
 
-func NewScanJob(mode Mode, format Format, resolution int) *scan {
+func NewScanJob(mode Mode, format Format, resolution int, thumbnail *thumbnail.Thumbnail) *scan {
 	return &scan{format: format,
 		mode:       mode,
-		resolution: resolution}
+		resolution: resolution,
+		thumbnail:  thumbnail,
+	}
 }
 
 func (s *scan) Start(baseDir string, imageFilename string) {
 	go func() {
-		debug.Info(fmt.Sprintf("Scanning process for %s. Start", imageFilename))
+		debug.Info(fmt.Sprintf("Scanning process for '%s'. Start", imageFilename))
 
 		// su -s /bin/sh - saned
 		command := exec.Command("/usr/bin/scanimage",
@@ -123,12 +126,13 @@ func (s *scan) Start(baseDir string, imageFilename string) {
 
 		err = ioutil.WriteFile(path.Join(baseDir, imageFilename), out, 0644)
 		if err != nil {
-			debug.Error(fmt.Sprintf("Cannot write image file on %s. Error: %s", imageFilename, err))
+			debug.Error(fmt.Sprintf("Cannot write image file on '%s'. Error: %s", imageFilename, err))
 		}
 
-		debug.Info(fmt.Sprintf("Scanning process for %s. End", imageFilename))
+		debug.Info(fmt.Sprintf("Scanning process for '%s'. End", imageFilename))
 
-		if err = thumbnail.GenerateThumbnail(baseDir, imageFilename); err != nil {
+		// TODO extract and run after this async execution
+		if err = s.thumbnail.GenerateThumbnail(imageFilename); err != nil {
 			debug.Error(err.Error())
 		}
 	}()
