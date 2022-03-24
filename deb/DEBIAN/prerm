@@ -1,0 +1,13 @@
+#!/bin/sh -e
+
+case "$1" in
+    upgrade)
+        systemctl stop scanpi
+    ;;
+    remove)
+        #systemctl stop scanpi
+        systemctl disable --now scanpi
+    ;;
+esac
+
+exit 0

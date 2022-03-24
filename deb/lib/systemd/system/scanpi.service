@@ -1,0 +1,17 @@
+[Unit]
+Description=scanpi - Web interface for SANE (Scanner Access Now Easy)
+After=network.target
+
+[Service]
+Type=simple
+User=scanpi
+Group=scanpi
+EnvironmentFile=/etc/opt/scanpi.conf
+WorkingDirectory=/opt/scanpi
+ExecStart=/opt/scanpi/scanpi
+SyslogIdentifier=scanpi
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

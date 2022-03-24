@@ -1,0 +1,5 @@
+name: scanpi
+id: github.com/adelolmo/scanpi
+type: go-service
+description: scanpi - Web interface for SANE (Scanner Access Now Easy)
+author: Andoni del Olmo <andoni.delolmo@gmail.com>

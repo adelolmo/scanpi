@@ -1,8 +1,0 @@
-Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: sane-web-client
-Source: https://github.com/adelolmo/sane-web-client
-
-Files: *
-Copyright: 2019 Andoni del Olmo <andoni.delolmo@gmail.com>
-Author: Andoni del Olmo <andoni.delolmo@gmail.com>
-License: GPL-3+

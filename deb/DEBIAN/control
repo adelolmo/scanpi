@@ -1,0 +1,10 @@
+Package: scanpi
+Version: ==version==
+Architecture: ==architecture==
+Maintainer: Andoni del Olmo <andoni.delolmo@gmail.com>
+Installed-Size: ==size==
+Section: utils
+Depends: sane-utils
+Priority: extra
+Homepage: https://github.com/adelolmo/scanpi
+Description: scanpi - Web interface for SANE (Scanner Access Now Easy)

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/adelolmo/sane-web-client/debug"
+	"github.com/adelolmo/scanpi/debug"
 	"github.com/disintegration/imaging"
 	"golang.org/x/image/tiff"
 	"image"

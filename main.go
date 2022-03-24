@@ -1,17 +1,19 @@
 package main
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
-	"github.com/adelolmo/sane-web-client/debug"
-	"github.com/adelolmo/sane-web-client/fs"
-	"github.com/adelolmo/sane-web-client/pdf"
-	"github.com/adelolmo/sane-web-client/scanimage"
-	"github.com/adelolmo/sane-web-client/thumbnail"
-	"github.com/adelolmo/sane-web-client/zipper"
+	"github.com/adelolmo/scanpi/debug"
+	"github.com/adelolmo/scanpi/fsutils"
+	"github.com/adelolmo/scanpi/pdf"
+	"github.com/adelolmo/scanpi/scanimage"
+	"github.com/adelolmo/scanpi/thumbnail"
+	"github.com/adelolmo/scanpi/zipper"
 	"github.com/gobuffalo/packr/v2"
 	"github.com/gorilla/mux"
 	"html/template"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -51,6 +53,9 @@ type configuration struct {
 	ThumbnailFilter string
 }
 
+//go:embed assets templates/*
+var content embed.FS
+
 var indexTemplate *template.Template
 var jobTemplate *template.Template
 var jobsTemplate *template.Template
@@ -59,39 +64,12 @@ var settingsTemplate *template.Template
 var appConfiguration configuration
 var thumb *thumbnail.Thumbnail
 
-func init() {
-	box := packr.New("templates", "./templates")
-	indexFile, err := box.FindString("index.html")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	headerFile, err := box.FindString("header.html")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	indexTemplate = template.Must(template.Must(template.New("index").Parse(headerFile)).Parse(indexFile))
-
-	jobFile, err := box.FindString("job.html")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	jobTemplate = template.Must(template.Must(template.New("job").Parse(headerFile)).Parse(jobFile))
-
-	jobsFile, err := box.FindString("jobs.html")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	jobsTemplate = template.Must(template.Must(template.New("jobs").Parse(headerFile)).Parse(jobsFile))
-
-	settingsFile, err := box.FindString("settings.html")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	settingsTemplate = template.Must(template.Must(template.New("settings").Parse(headerFile)).Parse(settingsFile))
-
-}
-
 func main() {
+	indexTemplate = template.Must(template.ParseFS(content, "templates/index.html", "templates/header.html"))
+	jobTemplate = template.Must(template.ParseFS(content, "templates/job.html", "templates/header.html"))
+	jobsTemplate = template.Must(template.ParseFS(content, "templates/jobs.html", "templates/header.html"))
+	settingsTemplate = template.Must(template.ParseFS(content, "templates/settings.html", "templates/header.html"))
+
 	port := os.Getenv("port")
 	if port == "" {
 		port = "8000"
@@ -123,10 +101,12 @@ func main() {
 	thumb = thumbnail.New(appConfiguration.ThumbnailFilter,
 		appConfiguration.OutputDirectory)
 
-	box := packr.New("assets", "assets/")
-
 	router := mux.NewRouter()
-	router.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", http.FileServer(box)))
+	fsys, err := fs.Sub(content, "assets")
+	if err != nil {
+		log.Fatal(err)
+	}
+	router.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", http.FileServer(http.FS(fsys))))
 	router.HandleFunc("/", homePage).Methods("GET")
 	router.HandleFunc("/settings", showSettingsPage).Methods("GET")
 	router.HandleFunc("/settings", updateSettingsPage).Methods("POST")
@@ -148,14 +128,17 @@ func main() {
 
 func homePage(w http.ResponseWriter, r *http.Request) {
 	var previousJobs []string
-	for _, dir := range fs.JobDirectories(appConfiguration.OutputDirectory) {
+	for _, dir := range fsutils.JobDirectories(appConfiguration.OutputDirectory) {
 		previousJobs = append(previousJobs, dir.Name())
 	}
 
 	type index struct {
 		Navigation string
 	}
+
+	w.Header().Add("Content-Type", "text/html")
 	if err := indexTemplate.Execute(w, &index{Navigation: "home"}); err != nil {
+		fmt.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -163,7 +146,9 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 
 func showSettingsPage(w http.ResponseWriter, r *http.Request) {
 	settings := readSettings()
+	w.Header().Add("Content-Type", "text/html")
 	if err := settingsTemplate.Execute(w, settings); err != nil {
+		fmt.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -186,7 +171,9 @@ func updateSettingsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Add("Content-Type", "text/html")
 	if err := settingsTemplate.Execute(w, settings); err != nil {
+		fmt.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -194,7 +181,7 @@ func updateSettingsPage(w http.ResponseWriter, r *http.Request) {
 
 func showJobsPage(w http.ResponseWriter, r *http.Request) {
 	var previousJobs []string
-	for _, dir := range fs.JobDirectories(appConfiguration.OutputDirectory) {
+	for _, dir := range fsutils.JobDirectories(appConfiguration.OutputDirectory) {
 		previousJobs = append(previousJobs, dir.Name())
 	}
 
@@ -202,8 +189,10 @@ func showJobsPage(w http.ResponseWriter, r *http.Request) {
 		Navigation:   "jobs",
 		PreviousJobs: previousJobs,
 	}
-	err := jobsTemplate.Execute(w, index)
-	if err != nil {
+
+	w.Header().Add("Content-Type", "text/html")
+	if err := jobsTemplate.Execute(w, index); err != nil {
+		fmt.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -218,7 +207,7 @@ func resumeJobPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var scans []string
-	directory := fs.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
+	directory := fsutils.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
 	for _, file := range directory {
 		scans = append(scans, file.Name())
 	}
@@ -228,7 +217,10 @@ func resumeJobPage(w http.ResponseWriter, r *http.Request) {
 		JobName:    jobName,
 		Scans:      scans,
 	}
+
+	w.Header().Add("Content-Type", "text/html")
 	if err := jobTemplate.Execute(w, scanner); err != nil {
+		fmt.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -246,7 +238,7 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var scans []string
-	for _, file := range fs.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName)) {
+	for _, file := range fsutils.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName)) {
 		scans = append(scans, file.Name())
 	}
 
@@ -255,7 +247,10 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 		Scans:      scans,
 		JobName:    jobName,
 	}
+
+	w.Header().Add("Content-Type", "text/html")
 	if err := jobTemplate.Execute(w, scanner); err != nil {
+		fmt.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -271,7 +266,7 @@ func deleteJobHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var previousJobs []string
-	for _, dir := range fs.JobDirectories(appConfiguration.OutputDirectory) {
+	for _, dir := range fsutils.JobDirectories(appConfiguration.OutputDirectory) {
 		previousJobs = append(previousJobs, dir.Name())
 	}
 
@@ -279,8 +274,10 @@ func deleteJobHandler(w http.ResponseWriter, r *http.Request) {
 		Navigation:   "jobs",
 		PreviousJobs: previousJobs,
 	}
-	err := jobsTemplate.Execute(w, index)
-	if err != nil {
+
+	w.Header().Add("Content-Type", "text/html")
+	if err := jobsTemplate.Execute(w, index); err != nil {
+		fmt.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -288,7 +285,7 @@ func deleteJobHandler(w http.ResponseWriter, r *http.Request) {
 
 func scanHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
-	previousScans := fs.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
+	previousScans := fsutils.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
 
 	fileExtension := readSettings().Format
 	scanName := fmt.Sprintf("1.%s", fileExtension)
@@ -323,7 +320,10 @@ func scanHandler(w http.ResponseWriter, r *http.Request) {
 		Scans:      scans,
 		JobStarted: true,
 	}
+
+	w.Header().Add("Content-Type", "text/html")
 	if err := jobTemplate.Execute(w, scanner); err != nil {
+		fmt.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -346,7 +346,7 @@ func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var scans []string
-	directory := fs.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
+	directory := fsutils.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
 	for _, file := range directory {
 		scans = append(scans, file.Name())
 	}
@@ -356,7 +356,10 @@ func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
 		JobName:    jobName,
 		Scans:      scans,
 	}
+
+	w.Header().Add("Content-Type", "text/html")
 	if err := jobTemplate.Execute(w, scanner); err != nil {
+		fmt.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -423,7 +426,7 @@ func downloadAllHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var scans []string
-	directory := fs.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
+	directory := fsutils.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
 	for _, file := range directory {
 		scans = append(scans, file.Name())
 	}

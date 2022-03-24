@@ -1,0 +1,30 @@
+#!/bin/sh -e
+
+USER=scanpi
+HOME=/var/opt/scanpi
+
+case "$1" in
+    configure|reconfigure)
+        exists=$( cat /etc/passwd | grep $USER | sed -e 's/:.*//g' )
+		if [ "$exists" = "" ]; then
+			echo "Creating \`$USER' user with home directory \`$HOME' ..."
+			adduser --system --gecos "scanpi service" --disabled-password --group --home $HOME $USER > /dev/null 2>&1
+		fi
+
+ 		mkdir -p "$HOME/jobs"
+        mkdir -p "$HOME/work"
+        chown -R saned.saned "$HOME"
+		chown $USER.$USER -R $HOME
+
+        systemctl daemon-reload
+        systemctl enable --now scanpi
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac

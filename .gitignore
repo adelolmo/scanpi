@@ -1,10 +1,5 @@
 .idea
+.run
 *.iml
-obj*
-debian/sane-web-client
-debian/debhelper-build-stamp
-debian/.debhelper
-debian/files
-debian/sane-web-client.debhelper.log
-debian/sane-web-client.substvars
+build
 release

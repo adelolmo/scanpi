@@ -3,8 +3,8 @@ package scanimage
 import (
 	"errors"
 	"fmt"
-	"github.com/adelolmo/sane-web-client/debug"
-	"github.com/adelolmo/sane-web-client/thumbnail"
+	"github.com/adelolmo/scanpi/debug"
+	"github.com/adelolmo/scanpi/thumbnail"
 	"io/ioutil"
 	"os/exec"
 	"path"
