@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-User=scanpi
-Group=scanpi
+User=saned
+Group=saned
 EnvironmentFile=/etc/opt/scanpi.conf
 WorkingDirectory=/opt/scanpi
 ExecStart=/opt/scanpi/scanpi

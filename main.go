@@ -114,6 +114,7 @@ func main() {
 	router.HandleFunc("/job", resumeJobPage).Methods("GET")
 	router.HandleFunc("/job", createJobHandler).Methods("POST")
 	router.HandleFunc("/deleteJob", deleteJobHandler).Methods("POST")
+	router.HandleFunc("/renameJob", renameJobHandler).Methods("POST")
 	router.HandleFunc("/scan", scanHandler).Methods("POST")
 	router.HandleFunc("/deleteScan", deleteScanHandler).Methods("POST")
 	router.HandleFunc("/download", downloadFileHandler).Methods("GET")
@@ -281,6 +282,22 @@ func deleteJobHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func renameJobHandler(w http.ResponseWriter, r *http.Request) {
+	currentJobName := r.FormValue("currentJobName")
+	newJobName := r.FormValue("newJobName")
+
+	currentJobPath := path.Join(appConfiguration.OutputDirectory, currentJobName)
+	newJobPath := path.Join(appConfiguration.OutputDirectory, newJobName)
+	if err := os.Rename(currentJobPath, newJobPath); err != nil {
+		fmt.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Location", "/job?jobName="+newJobName)
+	w.WriteHeader(303)
 }
 
 func scanHandler(w http.ResponseWriter, r *http.Request) {
