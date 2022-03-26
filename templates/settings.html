@@ -36,9 +36,10 @@
                     {{ if not .Resolution }}
                         <option selected>Choose...</option>
                     {{ end }}
+                    <option {{if eq .Resolution "1200" }} selected {{end}}>1200</option>
+                    <option {{if eq .Resolution "600" }} selected {{end}}>600</option>
                     <option {{if eq .Resolution "300" }} selected {{end}}>300</option>
-                    <option {{if eq .Resolution "200" }} selected {{end}}>200</option>
-                    <option {{if eq .Resolution "100" }} selected {{end}}>100</option>
+                    <option {{if eq .Resolution "75" }} selected {{end}}>75</option>
                 </select>
             </div>
         </div>
