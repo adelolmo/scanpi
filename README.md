@@ -11,8 +11,9 @@ Supported architectures:
 * armhf
 * arm64
 
-
-    make ARCH=armhf
+```
+make ARCH=armhf
+```    
 
 ## Install
 
