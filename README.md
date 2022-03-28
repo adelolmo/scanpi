@@ -1,6 +1,12 @@
 # scanpi
 scanpi - Web interface for SANE (Scanner Access Now Easy)
 
+Scan documents in your local network with a Raspberry Pi.
+Scanpi allows your devices at home to access your old scanner.
+
+![Jobs view](scanpi-jobs.jpg)
+![Job view](scanpi-job.jpg)
+
 ## Build
 
 The build process supports cross platform compilation.
