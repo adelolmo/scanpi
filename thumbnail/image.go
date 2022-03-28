@@ -28,7 +28,7 @@ func New(thumbnailName, baseDirectory string) *Thumbnail {
 	}
 }
 
-func (t *Thumbnail) Preview(originalImage string) (*bytes.Buffer, error) {
+func (t Thumbnail) Preview(originalImage string) (*bytes.Buffer, error) {
 	previewPath := originalImage + ".thumbnail"
 	preview, err := imaging.Open(previewPath)
 	if err != nil {
@@ -43,7 +43,7 @@ func (t *Thumbnail) Preview(originalImage string) (*bytes.Buffer, error) {
 	return buf, nil
 }
 
-func (t *Thumbnail) GenerateThumbnail(imageFilename string) error {
+func (t Thumbnail) GenerateThumbnail(imageFilename string) error {
 	start := time.Now()
 
 	previewPath := path.Join(t.baseDirectory, imageFilename) + ".thumbnail"
@@ -86,7 +86,7 @@ func (t *Thumbnail) GenerateThumbnail(imageFilename string) error {
 	return nil
 }
 
-func (t *Thumbnail) DeletePreview(originalImage string) error {
+func (t Thumbnail) DeletePreview(originalImage string) error {
 	previewPath := originalImage + ".thumbnail"
 
 	if err := os.Remove(previewPath); err != nil {

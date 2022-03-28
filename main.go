@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/adelolmo/scanpi/debug"
 	"github.com/adelolmo/scanpi/fsutils"
@@ -22,6 +23,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"syscall"
 )
 
 type settings struct {
@@ -290,13 +292,20 @@ func renameJobHandler(w http.ResponseWriter, r *http.Request) {
 
 	currentJobPath := path.Join(appConfiguration.OutputDirectory, currentJobName)
 	newJobPath := path.Join(appConfiguration.OutputDirectory, newJobName)
-	if err := os.Rename(currentJobPath, newJobPath); err != nil {
+
+	w.Header().Set("Location", "/job?jobName="+newJobName)
+
+	err := os.Rename(currentJobPath, newJobPath)
+	if err != nil {
+		if errors.Unwrap(err) == syscall.EEXIST {
+			w.WriteHeader(303)
+			return
+		}
 		fmt.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Location", "/job?jobName="+newJobName)
 	w.WriteHeader(303)
 }
 

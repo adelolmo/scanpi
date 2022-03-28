@@ -108,7 +108,7 @@ func NewScanJob(mode Mode, format Format, resolution int, thumbnail *thumbnail.T
 	}
 }
 
-func (s *scan) Start(baseDir string, imageFilename string) {
+func (s scan) Start(baseDir string, imageFilename string) {
 	go func() {
 		debug.Info(fmt.Sprintf("Scanning process for '%s'. Start", imageFilename))
 
