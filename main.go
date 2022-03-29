@@ -7,11 +7,9 @@ import (
 	"fmt"
 	"github.com/adelolmo/scanpi/debug"
 	"github.com/adelolmo/scanpi/fsutils"
+	"github.com/adelolmo/scanpi/graphic"
 	"github.com/adelolmo/scanpi/pdf"
-	"github.com/adelolmo/scanpi/scanimage"
-	"github.com/adelolmo/scanpi/thumbnail"
 	"github.com/adelolmo/scanpi/zipper"
-	"github.com/gobuffalo/packr/v2"
 	"github.com/gorilla/mux"
 	"html/template"
 	"io/fs"
@@ -21,9 +19,11 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 )
 
 type settings struct {
@@ -38,14 +38,19 @@ type pageJobs struct {
 	Navigation   string
 	JobName      string
 	PreviousJobs []string
-	Scans        []string
+	Scans        []image
 	JobStarted   bool
+}
+
+type image struct {
+	Name     string
+	LinkName string
 }
 
 type pageScanner struct {
 	Navigation string
 	JobName    string
-	Scans      []string
+	Scans      []image
 	JobStarted bool
 }
 
@@ -64,7 +69,7 @@ var jobsTemplate *template.Template
 var settingsTemplate *template.Template
 
 var appConfiguration configuration
-var thumb *thumbnail.Thumbnail
+var thumb *graphic.Thumbnail
 
 func main() {
 	indexTemplate = template.Must(template.ParseFS(content, "templates/index.html", "templates/header.html"))
@@ -77,6 +82,7 @@ func main() {
 		port = "8000"
 	}
 	outputDirectory := os.Getenv("output_dir")
+	migrate(outputDirectory)
 	workDirectory := os.Getenv("work_dir")
 	thumbnailFilter := os.Getenv("thumbnail_filter")
 	appConfiguration = configuration{
@@ -90,8 +96,8 @@ func main() {
 	settingsFile := path.Join(appConfiguration.WorkDirectory, "settings.json")
 	if _, err := os.Stat(settingsFile); os.IsNotExist(err) {
 		settings := &settings{
-			Mode:       scanimage.Color.String(),
-			Format:     scanimage.Jpeg.String(),
+			Mode:       graphic.Color.String(),
+			Format:     graphic.Jpeg.String(),
 			Resolution: "200",
 		}
 		settingsJson, _ := json.Marshal(settings)
@@ -100,7 +106,7 @@ func main() {
 		}
 	}
 
-	thumb = thumbnail.New(appConfiguration.ThumbnailFilter,
+	thumb = graphic.NewThumbnail(appConfiguration.ThumbnailFilter,
 		appConfiguration.OutputDirectory)
 
 	router := mux.NewRouter()
@@ -209,10 +215,10 @@ func resumeJobPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var scans []string
-	directory := fsutils.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
-	for _, file := range directory {
-		scans = append(scans, file.Name())
+	scans, err := listJobImages(jobName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	scanner := &pageJobs{
@@ -240,9 +246,10 @@ func createJobHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var scans []string
-	for _, file := range fsutils.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName)) {
-		scans = append(scans, file.Name())
+	scans, err := listJobImages(jobName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	scanner := &pageScanner{
@@ -311,33 +318,43 @@ func renameJobHandler(w http.ResponseWriter, r *http.Request) {
 
 func scanHandler(w http.ResponseWriter, r *http.Request) {
 	jobName := r.FormValue("jobName")
-	previousScans := fsutils.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
+	previousScans, err := listJobImages(jobName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	fileExtension := readSettings().Format
-	scanName := fmt.Sprintf("1.%s", fileExtension)
+	linkName := "1"
 	if len(previousScans) > 0 {
-		lastScanName := previousScans[len(previousScans)-1].Name()
+		lastScanName := previousScans[len(previousScans)-1].LinkName
 		lastScanNumber, err := strconv.Atoi(strings.Split(lastScanName, ".")[0])
 		if err != nil {
 			fmt.Println(err)
 		}
-		scanName = fmt.Sprintf("%d.%s", lastScanNumber+1, fileExtension)
+		linkName = strconv.Itoa(lastScanNumber + 1)
 	}
 
 	settings := readSettings()
 
 	resolution, _ := strconv.Atoi(settings.Resolution)
-	scanJob := scanimage.NewScanJob(
-		scanimage.ToMode(settings.Mode),
-		scanimage.ToFormat(settings.Format),
+	scanJob := graphic.NewScanJob(
+		graphic.ToMode(settings.Mode),
+		graphic.ToFormat(settings.Format),
 		resolution,
 		thumb,
 	)
-	scanJob.Start(appConfiguration.OutputDirectory, path.Join(jobName, scanName))
+	imageDetails := graphic.ImageDetails{
+		Name:          fsutils.GenerateDateFilename(),
+		LinkName:      linkName,
+		Format:        graphic.ToFormat(readSettings().Format),
+		Directory:     jobName,
+		BaseDirectory: appConfiguration.OutputDirectory,
+	}
+	scanJob.StartScanning(imageDetails)
 
-	var scans []string
+	var scans []image
 	for _, file := range previousScans {
-		scans = append(scans, file.Name())
+		scans = append(scans, file)
 	}
 
 	scanner := &pageJobs{
@@ -362,19 +379,36 @@ func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
 
 	debug.Info(fmt.Sprintf("delete image %s\n", imagePath))
 
-	if err := os.Remove(imagePath); err != nil {
+	readlink, err := os.Readlink(imagePath)
+	if err != nil {
+		fmt.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err := thumb.DeletePreview(imagePath); err != nil {
+	// delete image
+	if err := os.Remove(path.Join(appConfiguration.OutputDirectory, jobName, readlink)); err != nil {
+		fmt.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// delete symlink
+	if err := os.Remove(imagePath); err != nil {
+		fmt.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	var scans []string
-	directory := fsutils.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
-	for _, file := range directory {
-		scans = append(scans, file.Name())
+	if err := thumb.DeletePreview(imagePath); err != nil {
+		fmt.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	scans, err := listJobImages(jobName)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	scanner := &pageJobs{
@@ -451,18 +485,18 @@ func downloadAllHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var scans []string
-	directory := fsutils.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
-	for _, file := range directory {
-		scans = append(scans, file.Name())
+	scans, err := listJobImages(jobName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	switch envelope {
 	case "zip":
 		w.Header().Set("content-disposition", fmt.Sprintf("attachment; filename=\"%s.zip\"", jobName))
 		zip := zipper.NewZipper(w)
-		for _, filename := range scans {
-			if err := zip.AddFile(path.Join(appConfiguration.OutputDirectory, jobName, filename), filename); err != nil {
+		for _, scanImage := range scans {
+			if err := zip.AddFile(path.Join(appConfiguration.OutputDirectory, jobName, scanImage.Name), scanImage.Name); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -474,8 +508,8 @@ func downloadAllHandler(w http.ResponseWriter, r *http.Request) {
 	case "pdf":
 		w.Header().Set("content-disposition", fmt.Sprintf("attachment; filename=\"%s.pdf\"", jobName))
 		pdfFile := pdf.NewPdfFile()
-		for _, filename := range scans {
-			if err := pdfFile.AddImage(path.Join(appConfiguration.OutputDirectory, jobName, filename)); err != nil {
+		for _, scanImage := range scans {
+			if err := pdfFile.AddImage(path.Join(appConfiguration.OutputDirectory, jobName, scanImage.Name)); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -497,25 +531,29 @@ func previewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	scan := r.FormValue("scan")
 
-	w.Header().Set("Content-Type", "image/jpeg")
-
 	imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
 	buffer, err := thumb.Preview(imagePath)
 	if err != nil {
-		box := packr.New("assets", "./assets")
-		b, err := box.Find("not_available.jpeg")
+		fsys, err := fs.Sub(content, "assets")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if _, err := w.Write(b); err != nil {
+		file, err := fs.ReadFile(fsys, "not_available.jpeg")
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-Length", strconv.Itoa(len(b)))
+		if _, err := w.Write(file); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "image/jpeg")
+		w.Header().Set("Content-Length", strconv.Itoa(len(file)))
 		return
 	}
 
+	w.Header().Set("Content-Type", "image/jpeg")
 	w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
 	if _, err := w.Write(buffer.Bytes()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -533,7 +571,7 @@ func scannerHandler(w http.ResponseWriter, r *http.Request) {
 		Name:   "Unknown",
 		Status: "Not available",
 	}
-	deviceName, err := scanimage.Device()
+	deviceName, err := graphic.ScannerDevice()
 	if err == nil {
 		jsonBody = scanner{
 			Name:   deviceName,
@@ -578,4 +616,91 @@ func contentType(imagePath string) string {
 		return "application/pdf"
 	}
 	return fmt.Sprintf("image/%s", imageType)
+}
+
+func listJobImages(jobName string) ([]image, error) {
+	var scans []image
+	fileMetaDataSlice, err := fsutils.ImageFilesOnDirectory(path.Join(appConfiguration.OutputDirectory, jobName))
+	if err != nil {
+		return []image{}, err
+	}
+	for _, file := range fileMetaDataSlice {
+		scans = append(scans, image{
+			Name:     file.Filename,
+			LinkName: file.LinkName,
+		})
+	}
+	return scans, nil
+}
+
+// TODO delete
+func migrate(baseDir string) {
+	files, err := ioutil.ReadDir(baseDir)
+	if err != nil {
+		debug.Error(fmt.Sprintf("unable to get directories from '%s'", baseDir))
+	}
+	sort.Slice(files, func(i, j int) bool {
+		return files[j].ModTime().After(files[i].ModTime())
+	})
+
+	for _, file := range files {
+		if !file.IsDir() {
+			continue
+		}
+		migrateJob(path.Join(baseDir, file.Name()))
+	}
+	debug.Info("Migration finished")
+}
+
+func migrateJob(dir string) {
+	debug.Info(fmt.Sprintf("Migrating directory job: %s", dir))
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		debug.Error(fmt.Sprintf("unable to get images from directory '%s'", dir))
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+		if len(file.Name()) < 16 && file.Mode()&os.ModeSymlink != 0 {
+			continue
+		}
+		ext := path.Ext(file.Name())
+		if ext != ".tiff" && ext != ".png" && ext != ".jpeg" && ext != ".pnm" && ext != ".pdf" {
+			continue
+		}
+		if len(file.Name()) == 19 {
+			continue
+		}
+
+		filename := fsutils.GenerateDateFilename() + ext
+		thumbnailFilename := filename + ".thumbnail"
+		linkFilename := file.Name()
+		thumbnailLinkName := file.Name() + ".thumbnail"
+
+		// images
+		err := os.Rename(path.Join(dir, linkFilename), path.Join(dir, filename))
+		if err != nil {
+			debug.Error(fmt.Sprintf("unable to rename file '%s' to '%s'", linkFilename, filename))
+		}
+
+		err = os.Symlink(filename, path.Join(dir, linkFilename))
+		if err != nil {
+			debug.Error(fmt.Sprintf("Cannot create symlink to image file on '%s'. Error: %s", filename, err))
+		}
+
+		// thumbnails
+		err = os.Rename(path.Join(dir, thumbnailLinkName), path.Join(dir, thumbnailFilename))
+		if err != nil {
+			debug.Error(fmt.Sprintf("unable to rename file '%s' to '%s'", thumbnailLinkName, thumbnailFilename))
+		}
+
+		err = os.Symlink(thumbnailFilename, path.Join(dir, thumbnailLinkName))
+		if err != nil {
+			debug.Error(fmt.Sprintf("Cannot create symlink to image file on '%s'. Error: %s", filename, err))
+		}
+
+		time.Sleep(1100 * time.Millisecond)
+	}
 }

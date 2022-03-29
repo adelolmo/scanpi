@@ -6,31 +6,52 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
+	"time"
 )
 
-func ImageFilesOnDirectory(dir string) []os.FileInfo {
+type FileMetaData struct {
+	Filename string
+	LinkName string
+}
+
+func ImageFilesOnDirectory(dir string) ([]FileMetaData, error) {
+	metaData := make([]FileMetaData, 0)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		debug.Error(fmt.Sprintf("unable to get images from directory '%s'", dir))
-		return []os.FileInfo{}
+		return []FileMetaData{}, err
 	}
 	sort.Slice(files, func(i, j int) bool {
 		return files[i].ModTime().Before(files[j].ModTime())
 	})
-	i := 0
 	for _, file := range files {
 		if file.IsDir() {
 			continue
 		}
-		ext := path.Ext(file.Name())
+		if file.Mode()&os.ModeSymlink == 0 {
+			continue
+		}
+		readlink, err := os.Readlink(filepath.Join(dir, file.Name()))
+		if err != nil {
+			fmt.Println("error: " + err.Error())
+			continue
+		}
+
+		ext := path.Ext(readlink)
 		if ext != ".tiff" && ext != ".png" && ext != ".jpeg" && ext != ".pnm" && ext != ".pdf" {
 			continue
 		}
-		files[i] = file
-		i++
+		metaData = append(metaData, FileMetaData{
+			Filename: readlink,
+			LinkName: file.Name(),
+		})
 
 	}
-	files = files[:i]
-	return files
+	return metaData, nil
+}
+
+func GenerateDateFilename() string {
+	return time.Now().Format("20060102150405")
 }

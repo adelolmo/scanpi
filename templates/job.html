@@ -75,23 +75,23 @@
         <div class="col-sm-3">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">{{$scan}}</h5>
-                    <a href="/image?jobName={{$jobName}}&scan={{$scan}}">
-                        <img class="card-img-top" src="/preview?jobName={{$jobName}}&scan={{$scan}}"
-                             alt="{{$scan}}">
+                    <h5 class="card-title">{{$scan.LinkName}}</h5>
+                    <a href="/image?jobName={{$jobName}}&scan={{$scan.Name}}">
+                        <img class="card-img-top" src="/preview?jobName={{$jobName}}&scan={{$scan.Name}}"
+                             alt="{{$scan.Name}}">
                     </a>
                 </div>
                 <div class="card-footer">
                     <div class="row">
                         <div class="col-sm-6">
                             <button type="button" class="btn btn-outline-primary btn-sm"
-                                    onclick="download({{$jobName}},{{$scan}})" ;>
+                                    onclick="download({{$jobName}},{{$scan.LinkName}})" ;>
                                 Download
                             </button>
                         </div>
                         <div class="col-sm-6">
                             <button type="button" class="btn btn-outline-primary btn-sm"
-                                    onclick="deleteScan({{$jobName}},{{$scan}});">Delete
+                                    onclick="deleteScan({{$jobName}},{{$scan.LinkName}});">Delete
                             </button>
                         </div>
                     </div>
