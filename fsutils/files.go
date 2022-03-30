@@ -2,7 +2,7 @@ package fsutils
 
 import (
 	"fmt"
-	"github.com/adelolmo/scanpi/debug"
+	"github.com/adelolmo/scanpi/logger"
 	"io/ioutil"
 	"os"
 	"path"
@@ -20,7 +20,7 @@ func ImageFilesOnDirectory(dir string) ([]FileMetaData, error) {
 	metaData := make([]FileMetaData, 0)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		debug.Error(fmt.Sprintf("unable to get images from directory '%s'", dir))
+		logger.Error(fmt.Sprintf("unable to get images from directory '%s'", dir))
 		return []FileMetaData{}, err
 	}
 	sort.Slice(files, func(i, j int) bool {

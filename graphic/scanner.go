@@ -3,7 +3,7 @@ package graphic
 import (
 	"errors"
 	"fmt"
-	"github.com/adelolmo/scanpi/debug"
+	"github.com/adelolmo/scanpi/logger"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -134,36 +134,36 @@ func NewScanJob(mode Mode, format Format, resolution int, thumbnail *Thumbnail) 
 
 func (s scan) StartScanning(imageDetails ImageDetails) {
 	go func() {
-		debug.Info(fmt.Sprintf("Scanning process for '%s' with symlink '%s'. Start",
-			imageDetails.Filename(), imageDetails.LinkFilename()))
+		logger.Info("Scanning process for '%s' with symlink '%s'. Start",
+			imageDetails.Filename(), imageDetails.LinkFilename())
 
 		// su -s /bin/sh - saned
 		command := exec.Command("/usr/bin/scanimage",
 			fmt.Sprintf("--mode=%s", s.mode.String()),
 			fmt.Sprintf("--resolution=%d", s.resolution),
 			fmt.Sprintf("--format=%s", s.format.String()))
-		debug.Info(strings.Join(command.Args, " "))
+		logger.Info(strings.Join(command.Args, " "))
 		out, err := command.Output()
 		if err != nil {
-			debug.Error(fmt.Sprintf("Error executing scanimage command. Output: %s. Error:%v", out, err))
+			logger.Error(fmt.Sprintf("Error executing scanimage command. Output: %s. Error:%v", out, err))
 			return
 		}
 
 		err = ioutil.WriteFile(imageDetails.ImagePath(), out, 0644)
 		if err != nil {
-			debug.Error(fmt.Sprintf("Cannot write image file on '%s'. Error: %s", imageDetails.LinkFilename(), err))
+			logger.Error(fmt.Sprintf("Cannot write image file on '%s'. Error: %s", imageDetails.LinkFilename(), err))
 		}
 
 		err = os.Symlink(imageDetails.Filename(), imageDetails.LinkPath())
 		if err != nil {
-			debug.Error(fmt.Sprintf("Cannot create symlink to image file on '%s'. Error: %s", imageDetails.LinkPath(), err))
+			logger.Error(fmt.Sprintf("Cannot create symlink to image file on '%s'. Error: %s", imageDetails.LinkPath(), err))
 		}
 
-		debug.Info(fmt.Sprintf("Scanning process for '%s'. End", imageDetails.LinkFilename()))
+		logger.Info("Scanning process for '%s'. End", imageDetails.LinkFilename())
 
 		// TODO extract and run after this async execution
 		if err = s.thumbnail.GenerateThumbnail(imageDetails); err != nil {
-			debug.Error(err.Error())
+			logger.Error(err.Error())
 		}
 	}()
 }
@@ -172,7 +172,7 @@ func ScannerDevice() (string, error) {
 	// scanimage -f "scanner number %i device %d is a %t, model %m, produced by %v"
 	// scanimage -f "%m"
 	command := exec.Command("/usr/bin/scanimage", "--formatted-device-list", "\"%m\"")
-	debug.Info(strings.Join(command.Args, " "))
+	logger.Info(strings.Join(command.Args, " "))
 	out, err := command.Output()
 	if err != nil {
 		return "", errors.New(fmt.Sprintf("Error executing scanimage command. Output: %s. Error:%v", out, err))

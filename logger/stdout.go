@@ -1,4 +1,4 @@
-package debug
+package logger
 
 import (
 	"fmt"
@@ -16,9 +16,15 @@ func init() {
 	debug = debugEnv
 }
 
-func Info(a string) {
-	if debug {
-		fmt.Print(a + "\n")
+func Info(format string, a ...interface{}) {
+	if !debug {
+		return
+	}
+
+	if a == nil {
+		fmt.Println(format)
+	} else {
+		fmt.Printf(format+"\n", a)
 	}
 }
 

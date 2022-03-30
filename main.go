@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/adelolmo/scanpi/debug"
 	"github.com/adelolmo/scanpi/fsutils"
 	"github.com/adelolmo/scanpi/graphic"
+	"github.com/adelolmo/scanpi/logger"
 	"github.com/adelolmo/scanpi/pdf"
 	"github.com/adelolmo/scanpi/zipper"
 	"github.com/gorilla/mux"
@@ -82,7 +82,7 @@ func main() {
 		port = "8000"
 	}
 	outputDirectory := os.Getenv("output_dir")
-	migrate(outputDirectory)
+	//migrate(outputDirectory)
 	workDirectory := os.Getenv("work_dir")
 	thumbnailFilter := os.Getenv("thumbnail_filter")
 	appConfiguration = configuration{
@@ -91,7 +91,7 @@ func main() {
 		ThumbnailFilter: thumbnailFilter,
 	}
 	fmt.Println(fmt.Sprintf("port: %s, output_dir: %s, work_dir: %s, thumbnail_filter: %s debug: %v",
-		port, outputDirectory, workDirectory, thumbnailFilter, debug.Enabled()))
+		port, outputDirectory, workDirectory, thumbnailFilter, logger.Enabled()))
 
 	settingsFile := path.Join(appConfiguration.WorkDirectory, "settings.json")
 	if _, err := os.Stat(settingsFile); os.IsNotExist(err) {
@@ -377,7 +377,7 @@ func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
 	scan := r.FormValue("scan")
 	imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
 
-	debug.Info(fmt.Sprintf("delete image %s\n", imagePath))
+	logger.Info("delete image %s", imagePath)
 
 	readlink, err := os.Readlink(imagePath)
 	if err != nil {
@@ -426,7 +426,7 @@ func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
-	debug.Info("downloadFileHandler")
+	logger.Info("downloadFileHandler")
 	encodedJobName := r.FormValue("jobName")
 	jobName, err := url.QueryUnescape(encodedJobName)
 	if err != nil {
@@ -452,7 +452,7 @@ func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func imageHandler(w http.ResponseWriter, r *http.Request) {
-	debug.Info("imageHandler")
+	logger.Info("imageHandler")
 	encodedJobName := r.FormValue("jobName")
 	jobName, err := url.QueryUnescape(encodedJobName)
 	if err != nil {
@@ -476,7 +476,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func downloadAllHandler(w http.ResponseWriter, r *http.Request) {
-	debug.Info("downloadAllHandler")
+	logger.Info("downloadAllHandler")
 	envelope := r.FormValue("envelope")
 	encodedJobName := r.FormValue("jobName")
 	jobName, err := url.QueryUnescape(encodedJobName)
@@ -522,7 +522,7 @@ func downloadAllHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func previewHandler(w http.ResponseWriter, r *http.Request) {
-	debug.Info("previewHandler")
+	logger.Info("previewHandler")
 	encodedJobName := r.FormValue("jobName")
 	jobName, err := url.QueryUnescape(encodedJobName)
 	if err != nil {
@@ -602,7 +602,7 @@ func readSettings() *settings {
 
 func readImage(jobName string, scan string) ([]byte, string, error) {
 	imagePath := path.Join(appConfiguration.OutputDirectory, jobName, scan)
-	debug.Info(fmt.Sprintf("imagePath: %s", imagePath))
+	logger.Info("imagePath: %s", imagePath)
 	file, err := ioutil.ReadFile(imagePath)
 	if err != nil {
 		return nil, "", err
@@ -637,7 +637,7 @@ func listJobImages(jobName string) ([]image, error) {
 func migrate(baseDir string) {
 	files, err := ioutil.ReadDir(baseDir)
 	if err != nil {
-		debug.Error(fmt.Sprintf("unable to get directories from '%s'", baseDir))
+		logger.Error(fmt.Sprintf("unable to get directories from '%s'", baseDir))
 	}
 	sort.Slice(files, func(i, j int) bool {
 		return files[j].ModTime().After(files[i].ModTime())
@@ -649,14 +649,14 @@ func migrate(baseDir string) {
 		}
 		migrateJob(path.Join(baseDir, file.Name()))
 	}
-	debug.Info("Migration finished")
+	logger.Info("Migration finished")
 }
 
 func migrateJob(dir string) {
-	debug.Info(fmt.Sprintf("Migrating directory job: %s", dir))
+	logger.Info("Migrating directory job: %s", dir)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		debug.Error(fmt.Sprintf("unable to get images from directory '%s'", dir))
+		logger.Error(fmt.Sprintf("unable to get images from directory '%s'", dir))
 	}
 
 	for _, file := range files {
@@ -682,23 +682,23 @@ func migrateJob(dir string) {
 		// images
 		err := os.Rename(path.Join(dir, linkFilename), path.Join(dir, filename))
 		if err != nil {
-			debug.Error(fmt.Sprintf("unable to rename file '%s' to '%s'", linkFilename, filename))
+			logger.Error(fmt.Sprintf("unable to rename file '%s' to '%s'", linkFilename, filename))
 		}
 
 		err = os.Symlink(filename, path.Join(dir, linkFilename))
 		if err != nil {
-			debug.Error(fmt.Sprintf("Cannot create symlink to image file on '%s'. Error: %s", filename, err))
+			logger.Error(fmt.Sprintf("Cannot create symlink to image file on '%s'. Error: %s", filename, err))
 		}
 
 		// thumbnails
 		err = os.Rename(path.Join(dir, thumbnailLinkName), path.Join(dir, thumbnailFilename))
 		if err != nil {
-			debug.Error(fmt.Sprintf("unable to rename file '%s' to '%s'", thumbnailLinkName, thumbnailFilename))
+			logger.Error(fmt.Sprintf("unable to rename file '%s' to '%s'", thumbnailLinkName, thumbnailFilename))
 		}
 
 		err = os.Symlink(thumbnailFilename, path.Join(dir, thumbnailLinkName))
 		if err != nil {
-			debug.Error(fmt.Sprintf("Cannot create symlink to image file on '%s'. Error: %s", filename, err))
+			logger.Error(fmt.Sprintf("Cannot create symlink to image file on '%s'. Error: %s", filename, err))
 		}
 
 		time.Sleep(1100 * time.Millisecond)

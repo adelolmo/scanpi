@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/adelolmo/scanpi/debug"
+	"github.com/adelolmo/scanpi/logger"
 	"github.com/disintegration/imaging"
 	"golang.org/x/image/tiff"
 	"image"
@@ -48,46 +48,46 @@ func (t Thumbnail) GenerateThumbnail(imageDetails ImageDetails) error {
 
 	previewPath := imageDetails.ImagePath() + ".thumbnail"
 
-	debug.Info(fmt.Sprintf("(%s) Generating preview...", imageDetails.Filename()))
+	logger.Info("(%s) Generating preview...", imageDetails.Filename())
 
-	debug.Info(fmt.Sprintf("(%s) read file", imageDetails.Filename()))
+	logger.Info("(%s) read file", imageDetails.Filename())
 	file, err := ioutil.ReadFile(imageDetails.ImagePath())
 	if err != nil {
 		return errors.New(fmt.Sprintf("Cannot read image on %s. Error: %s", imageDetails.Filename(), err))
 	}
-	debug.Info(fmt.Sprintf("(%s) done", imageDetails.Filename()))
+	logger.Info("(%s) done", imageDetails.Filename())
 
-	debug.Info(fmt.Sprintf("(%s) decode image", imageDetails.Filename()))
+	logger.Info("(%s) decode image", imageDetails.Filename())
 	srcImage, err := decodeImage(bytes.NewReader(file), imageDetails.ImagePath())
 	if err != nil {
 		return errors.New(fmt.Sprintf("Cannot decode image on %s. Error: %s", imageDetails.Filename(), err))
 	}
-	debug.Info(fmt.Sprintf("(%s) done", imageDetails.Filename()))
+	logger.Info("(%s) done", imageDetails.Filename())
 
-	debug.Info(fmt.Sprintf("(%s) resize image", imageDetails.Filename()))
+	logger.Info("(%s) resize image", imageDetails.Filename())
 	dst := imaging.Resize(srcImage, 0, 250, t.filter)
-	debug.Info(fmt.Sprintf("(%s) done", imageDetails.Filename()))
+	logger.Info("(%s) done", imageDetails.Filename())
 
-	debug.Info(fmt.Sprintf("(%s) save image", imageDetails.Filename()))
+	logger.Info("(%s) save image", imageDetails.Filename())
 	err = imaging.Save(dst, previewPath+".jpeg")
 	if err != nil {
 		return errors.New(fmt.Sprintf("Cannot save preview on %s. Error: %s\n", previewPath+".jpeg", err))
 	}
-	debug.Info(fmt.Sprintf("(%s) done", imageDetails.Filename()))
+	logger.Info("(%s) done", imageDetails.Filename())
 
-	debug.Info(fmt.Sprintf("(%s) rename", imageDetails.Filename()))
+	logger.Info("(%s) rename", imageDetails.Filename())
 	if err = os.Rename(previewPath+".jpeg", previewPath); err != nil {
 		return errors.New(fmt.Sprintf("Cannot rename Thumbnail on %s. Error: %s", previewPath+".jpeg", err))
 	}
 
-	debug.Info(fmt.Sprintf("(%s) creating symlink", imageDetails.Filename()))
+	logger.Info("(%s) creating symlink", imageDetails.Filename())
 	err = os.Symlink(imageDetails.Filename()+".thumbnail", imageDetails.LinkPath()+".thumbnail")
 	if err != nil {
-		debug.Error(fmt.Sprintf("Cannot create symlink to image file on '%s'. Error: %s", imageDetails.Filename(), err))
+		logger.Error(fmt.Sprintf("Cannot create symlink to image file on '%s'. Error: %s", imageDetails.Filename(), err))
 	}
-	debug.Info(fmt.Sprintf("(%s) done", imageDetails.Filename()))
+	logger.Info("(%s) done", imageDetails.Filename())
 
-	debug.Info(fmt.Sprintf("(%s) Generation took %fs", imageDetails.Filename(), time.Now().Sub(start).Seconds()))
+	logger.Info("(%s) Generation took %fs", imageDetails.Filename(), time.Now().Sub(start).Seconds())
 
 	return nil
 }
@@ -168,7 +168,7 @@ func toThumbnailFilter(filter string) imaging.ResampleFilter {
 	case "Cosine":
 		return imaging.Cosine
 	default:
-		debug.Info(fmt.Sprintf("using default filter NearestNeighbor instead of unknown %s", filter))
+		logger.Info("using default filter NearestNeighbor instead of unknown %s", filter)
 		return imaging.NearestNeighbor
 	}
 }
