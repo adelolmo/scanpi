@@ -19,6 +19,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -540,7 +541,8 @@ func previewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "image/jpeg")
+	fileContentType := fmt.Sprintf("image/%s", filepath.Ext(imagePath)[1:])
+	w.Header().Set("Content-Type", fileContentType)
 	w.Header().Set("Content-Length", strconv.Itoa(len(buffer.Bytes())))
 	if _, err := w.Write(buffer.Bytes()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
