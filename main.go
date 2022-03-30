@@ -379,20 +379,7 @@ func deleteScanHandler(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("delete image %s", imagePath)
 
-	readlink, err := os.Readlink(imagePath)
-	if err != nil {
-		fmt.Println(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	// delete image
-	if err := os.Remove(path.Join(appConfiguration.OutputDirectory, jobName, readlink)); err != nil {
-		fmt.Println(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	// delete symlink
-	if err := os.Remove(imagePath); err != nil {
+	if err := fsutils.DeleteFileAndLink(imagePath); err != nil {
 		fmt.Println(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

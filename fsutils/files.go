@@ -1,6 +1,7 @@
 package fsutils
 
 import (
+	"errors"
 	"fmt"
 	"github.com/adelolmo/scanpi/logger"
 	"io/ioutil"
@@ -54,4 +55,23 @@ func ImageFilesOnDirectory(dir string) ([]FileMetaData, error) {
 
 func GenerateDateFilename() string {
 	return time.Now().Format("20060102150405")
+}
+
+func DeleteFileAndLink(filePath string) error {
+	readlink, err := os.Readlink(filePath)
+	if err != nil {
+		return errors.New(fmt.Sprintf("unable to resolve symlink %s. error: %v", filePath, err))
+	}
+
+	// delete file
+	if err := os.Remove(path.Join(path.Dir(filePath), readlink)); err != nil {
+		return errors.New(fmt.Sprintf("unable to delete file %s. Error: %v", readlink, err))
+	}
+	
+	// delete symlink
+	if err := os.Remove(filePath); err != nil {
+		return errors.New(fmt.Sprintf("unable to delete symlink %s. error: %v", filePath, err))
+	}
+
+	return nil
 }

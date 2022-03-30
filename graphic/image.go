@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/adelolmo/scanpi/fsutils"
 	"github.com/adelolmo/scanpi/logger"
 	"github.com/disintegration/imaging"
 	"golang.org/x/image/tiff"
@@ -94,20 +95,7 @@ func (t Thumbnail) GenerateThumbnail(imageDetails ImageDetails) error {
 
 func (t Thumbnail) DeletePreview(originalImage string) error {
 	previewPath := originalImage + ".thumbnail"
-
-	readlink, err := os.Readlink(previewPath)
-	if err != nil {
-		return errors.New(fmt.Sprintf("unable to resolve symlink %s. Error: %v", previewPath, err))
-	}
-	// delete image
-	if err := os.Remove(path.Join(path.Dir(originalImage), readlink)); err != nil {
-		return errors.New(fmt.Sprintf("unable to delete image file %s. Error: %v", readlink, err))
-	}
-	// delete symlink
-	if err := os.Remove(previewPath); err != nil {
-		return errors.New(fmt.Sprintf("unable to delete symlink %s. Error: %v", previewPath, err))
-	}
-	return nil
+	return fsutils.DeleteFileAndLink(previewPath)
 }
 
 func decodeImage(r *bytes.Reader, originalImage string) (image.Image, error) {
