@@ -1,5 +1,4 @@
 .idea
 .run
-*.iml
-build
-release
+build-debian
+scanpi

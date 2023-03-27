@@ -5,10 +5,10 @@ github.com/disintegration/imaging
 ## explicit
 github.com/gorilla/mux
 # github.com/jung-kurt/gofpdf v1.12.1
-## explicit
+## explicit; go 1.12
 github.com/jung-kurt/gofpdf
 # golang.org/x/image v0.0.0-20190910094157-69e4b8554b2a
-## explicit
+## explicit; go 1.12
 golang.org/x/image/bmp
 golang.org/x/image/ccitt
 golang.org/x/image/tiff

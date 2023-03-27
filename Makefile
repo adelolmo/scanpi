@@ -2,9 +2,9 @@ MAKEFLAGS += --silent
 
 BIN_DIR=/opt/scanpi
 BIN=scanpi
-BUILD_DIR=build
-RELEASE_DIR=$(BUILD_DIR)/release
-TMP_DIR=$(BUILD_DIR)/tmp
+BUILD_DIR=build-debian
+RELEASE_DIR := $(realpath $(CURDIR)/..)
+
 VERSION := $(shell cat VERSION)
 PLATFORM := $(shell uname -m)
 
@@ -29,29 +29,56 @@ GOARCH :=
 		GOARCH = arm
 	endif
 
-package: clean prepare cp compile control
+ifeq ($(GOARCH),)
+	$(error Invalid ARCH: $(ARCH))
+endif
+
+.PHONY: all debian clean build tidy vendor install uninstall
+
+all: build
+
+debian: clean $(BUILD_DIR)/DEBIAN
 	@echo Building package...
-	chmod --quiet 0555 $(TMP_DIR)/DEBIAN/p* || true
-	fakeroot dpkg-deb -b -z9 $(TMP_DIR) $(RELEASE_DIR)
+	cp $(BIN) $(BUILD_DIR)$(BIN_DIR)
+	chmod --quiet 0555 $(BUILD_DIR)/DEBIAN/p* || true
+	fakeroot dpkg-deb -b -z9 $(BUILD_DIR) $(RELEASE_DIR)
 
 clean:
-	rm -rf $(TMP_DIR) $(RELEASE_DIR)
+	@echo Clean...
+	rm -rf $(BUILD_DIR)
 
-prepare:
-	@echo Prepare...
-	mkdir -p $(TMP_DIR)/$(BIN_DIR) $(RELEASE_DIR)
+$(BUILD_DIR)/DEBIAN: $(BUILD_DIR)
+	@echo Prapare package...
+	cp -R deb/DEBIAN $(BUILD_DIR)
+	$(MAKE) install DESTDIR=$(BUILD_DIR)
+	$(eval SIZE := $(shell du -sbk $(BUILD_DIR) | grep -o '[0-9]*'))
+	@sed -i "s/==version==/$(VERSION)/g;s/==size==/$(size)/g;s/==architecture==/$(ARCH)/g" "$(BUILD_DIR)/DEBIAN/control"
 
-cp:
-	cp -R deb/* $(TMP_DIR)
+$(BUILD_DIR):
+	mkdir $(BUILD_DIR)
 
-compile:
+build:
+	GOOS=linux GOARCH=$(GOARCH) go build -o $(BIN) .
+
+tidy:
 	go mod tidy
-	go mod vendor > /dev/null 2>&1
-	GOOS=linux GOARCH=$(GOARCH) go build -o $(TMP_DIR)/$(BIN_DIR)/$(BIN) main.go
 
-control:
-	$(eval size=$(shell du -sbk $(TMP_DIR)/ | grep -o '[0-9]*'))
-	@sed -i "s/==version==/$(VERSION)/g;s/==size==/$(size)/g;s/==architecture==/$(ARCH)/g" "$(TMP_DIR)/DEBIAN/control"
+vendor: tidy
+	go mod vendor
+
+install:
+	install -Dm755 $(BIN) $(DESTDIR)$(BIN_DIR)/$(BIN)
+	install -Dm644 deb/lib/systemd/system/scanpi.service $(DESTDIR)/lib/systemd/system/scanpi.service
+	install -Dm644 deb/$(BIN_DIR)/backup $(DESTDIR)$(BIN_DIR)/backup
+	install -Dm644 deb/$(BIN_DIR)/restore $(DESTDIR)$(BIN_DIR)/restore
+	install -Dm644 deb/etc/opt/scanpi.conf $(DESTDIR)/etc/opt/scanpi.conf
+
+uninstall:
+	rm -f $(DESTDIR)$(BIN_DIR)/$(BIN)
+	rm -f $(DESTDIR)/lib/systemd/sysmte/scanpi.service
+	rm -f $(DESTDIR)$(BIN_DIR)/backup
+	rm -f $(DESTDIR)$(BIN_DIR)/restore
+	rm -f $(DESTDIR)/etc/opt/scanpi.conf
 
 test:
 	go test ./... -race -cover

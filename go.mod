@@ -1,6 +1,6 @@
 module github.com/adelolmo/scanpi
 
-go 1.16
+go 1.18
 
 require (
 	github.com/disintegration/imaging v1.6.1
