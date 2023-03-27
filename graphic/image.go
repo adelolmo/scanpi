@@ -11,7 +11,6 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
-	"io/ioutil"
 	"os"
 	"path"
 	"time"
@@ -52,7 +51,7 @@ func (t Thumbnail) GenerateThumbnail(imageDetails ImageDetails) error {
 	logger.Info("(%s) Generating preview...", imageDetails.Filename())
 
 	logger.Info("(%s) read file", imageDetails.Filename())
-	file, err := ioutil.ReadFile(imageDetails.ImagePath())
+	file, err := os.ReadFile(imageDetails.ImagePath())
 	if err != nil {
 		return errors.New(fmt.Sprintf("Cannot read image on %s. Error: %s", imageDetails.Filename(), err))
 	}

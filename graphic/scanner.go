@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/adelolmo/scanpi/logger"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -149,7 +148,7 @@ func (s scan) StartScanning(imageDetails ImageDetails) {
 			return
 		}
 
-		err = ioutil.WriteFile(imageDetails.ImagePath(), out, 0644)
+		err = os.WriteFile(imageDetails.ImagePath(), out, 0644)
 		if err != nil {
 			logger.Error(fmt.Sprintf("Cannot write image file on '%s'. Error: %s", imageDetails.LinkFilename(), err))
 		}
