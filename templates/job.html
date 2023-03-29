@@ -4,7 +4,7 @@
 <body>
 
 {{ template "nav" . }}
-<div class="container">
+<div class="container-fluid">
     <h2>
         <span id="originalJobName">{{.JobName}}</span>
         <button id="buttonRename" type="button" class="btn btn-outline-primary"
@@ -77,15 +77,18 @@
                 <div class="card-body">
                     <h5 class="card-title">{{$scan.LinkName}}</h5>
                     <a href="/image?jobName={{$jobName}}&scan={{$scan.Name}}">
-                        <img class="card-img-top" src="/preview?jobName={{$jobName}}&scan={{$scan.Name}}"
-                             alt="{{$scan.Name}}">
+                        <img id="{{$scan.Id}}" class="card-img-top" src="/preview?jobName={{$jobName}}&scan={{$scan.Name}}"
+                             alt="{{$scan.Name}}"
+                             draggable="true"
+                             ondragstart="dragstart_handler(event)" ondragend="dragend_handler(event);"
+                             ondrop="drop_handler(event);" ondragover="dragover_handler(event);">
                     </a>
                 </div>
                 <div class="card-footer">
                     <div class="row">
                         <div class="col-sm-6">
                             <button type="button" class="btn btn-outline-primary btn-sm"
-                                    onclick="download({{$jobName}},{{$scan.LinkName}})" ;>
+                                    onclick="download({{$jobName}},{{$scan.LinkName}});">
                                 Download
                             </button>
                         </div>
@@ -277,6 +280,48 @@
         const encodedJobName = encodeURIComponent(jobName);
         window.location.href = '/downloadall?jobName=' + encodedJobName + '&envelope=' + envelope;
         $('#downloadAllModal').modal('hide')
+    }
+
+    // drag & drop
+    function dragstart_handler(ev) {
+        console.log("dragStart");
+        // Change the source element's background color to signify drag has started
+        ev.currentTarget.style.border = "dashed";
+        // Add the id of the drag source element to the drag data payload so
+        // it is available when the drop event is fired
+        ev.dataTransfer.setData("text", ev.target.id);
+        // Tell the browser both copy and move are possible
+        ev.effectAllowed = "copyMove";
+    }
+    function dragover_handler(ev) {
+        console.log("dragOver");
+        // Change the target element's border to signify a drag over event
+        // has occurred
+        ev.currentTarget.style.background = "lightblue";
+        ev.preventDefault();
+    }
+    function drop_handler(ev) {
+        console.log("Drop");
+        ev.preventDefault();
+        // Get the id of drag source element (that was added to the drag data
+        // payload by the dragstart event handler)
+        var id = ev.dataTransfer.getData("text");
+        // Only Move the element if the source and destination ids are both "move"
+        if (id === "src_move" && ev.target.id === "dest_move")
+            ev.target.appendChild(document.getElementById(id));
+        // Copy the element if the source and destination ids are both "copy"
+        if (id === "src_copy" && ev.target.id === "dest_copy") {
+            var nodeCopy = document.getElementById(id).cloneNode(true);
+            nodeCopy.id = "newId";
+            ev.target.appendChild(nodeCopy);
+        }
+    }
+    function dragend_handler(ev) {
+        console.log("dragEnd");
+        // Restore source's border
+        ev.target.style.border = "solid black";
+        // Remove all of the drag data
+        ev.dataTransfer.clearData();
     }
 </script>
 </body>
